@@ -786,7 +786,7 @@ jobs:
         uses: ./.github/actions/deploy_on_prem
         timeout-minutes: 60
         env:
-          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-database,.cattle-system,.orch-secret,.onprem"
+          TF_VAR_no_proxy: "localhost,127.0.0.0/8,10.0.0.0/8,192.168.0.0/16,.svc,.cluster.local,.default,.internal,.orch-platform,.orch-app,.orch-cluster,.orch-infra,.orch-iam,.orch-database,.cattle-system,.orch-secret,.onprem"
           TF_VAR_en_http_proxy: "http://192.168.99.30:8080"
           TF_VAR_en_https_proxy: "http://192.168.99.30:8080"
           TF_VAR_oxm_pxe_server_int: "orchnet"

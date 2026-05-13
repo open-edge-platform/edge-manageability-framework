@@ -51,3 +51,6 @@ resources:
 vncProxyResources:
   {{- toYaml . | nindent 4 }}
 {{- end }}
+serviceArgs:
+  restProxy:
+    nexus-api-url: "http://tenancy-manager.orch-iam.svc:8080"

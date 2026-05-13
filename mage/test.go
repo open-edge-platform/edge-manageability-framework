@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-edge-platform/edge-manageability-framework/internal/retry"
-	nexus_client "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/nexus-client"
 )
 
 const (
@@ -51,7 +50,7 @@ func (Test) createTestProject(ctx context.Context) error {
 
 	// create testOrg if it does not exist
 	err = tu.GetOrg(ctx, TestOrg)
-	if nexus_client.IsNotFound(err) {
+	if isTenancyNotFound(err) {
 		err = tu.CreateOrg(ctx, TestOrg)
 	}
 	if err != nil {
@@ -60,7 +59,7 @@ func (Test) createTestProject(ctx context.Context) error {
 
 	// create testProject if it does not exist
 	err = tu.GetProject(ctx, TestOrg, TestProject)
-	if nexus_client.IsNotFound(err) {
+	if isTenancyNotFound(err) {
 		err = tu.CreateProjectInOrg(ctx, TestOrg, TestProject)
 	}
 	if err != nil {
@@ -239,7 +238,7 @@ func createAndWaitForOrg(ctx context.Context) error {
 
 	// Get testOrg
 	err = tu.GetOrg(ctx, TenancyOrg)
-	if nexus_client.IsNotFound(err) {
+	if isTenancyNotFound(err) {
 		return fmt.Errorf("error fetching org: %w", err)
 	}
 	if err != nil {
@@ -290,7 +289,7 @@ func createAndWaitForProject(ctx context.Context) error {
 	}
 	// Get testProject
 	err = tu.GetProject(ctx, TenancyOrg, TenancyProject)
-	if nexus_client.IsNotFound(err) {
+	if isTenancyNotFound(err) {
 		return fmt.Errorf("error fetching project: %w", err)
 	}
 	if err != nil {

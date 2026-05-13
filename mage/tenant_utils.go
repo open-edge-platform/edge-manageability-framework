@@ -10,21 +10,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
-	"time"
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/bitfield/script"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	folderv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/folder.edge-orchestrator.intel.com/v1"
-	orgsv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
-	projectv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
-	nexus_client "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/nexus-client"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -76,46 +67,19 @@ func (TenantUtils) CreateDefaultMtSetup(ctx context.Context) error {
 
 // CreateOrg creates an Org in the system: mage tenantUtils:createOrg <org-name>
 func (TenantUtils) CreateOrg(ctx context.Context, org string) error {
-	orgId, _ := getOrgId(ctx, org)
-	if orgId != "" {
-		fmt.Printf("Org (%s) already present with UID (%s)\n", org, orgId)
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
+	}
+	if uid, _ := lookupOrgUID(ctx, client, org); uid != "" {
+		fmt.Printf("Org (%s) already present with UID (%s)\n", org, uid)
 		return nil
 	}
 	fmt.Printf("Creating Org (%s)\n", org)
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
-	if err != nil {
+	if err := client.CreateOrg(ctx, org, org); err != nil {
 		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
-		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
-	}
-
-	_, err = configNode.AddOrgs(ctx, &orgsv1.Org{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: org,
-		},
-		Spec: orgsv1.OrgSpec{
-			Description: org,
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
-	}
-	nexusClient.SubscribeAll()
-
-	msg, err := waitUntilOrgWatcherCreation(ctx, nexusClient, org)
-	if err != nil {
-		return fmt.Errorf("ktc orgactivewatcher for org %s failed to be created with error %w", org, err)
-	}
-	if msg == "Created" {
-		fmt.Printf("\nktc orgactivewatcher for org %s created\n", org)
-	} else {
-		fmt.Printf("\nktc orgactivewatcher for org %s status - %s\n", org, msg)
-	}
-
-	orgUUID, err := waitUntilOrgCreation(ctx, nexusClient, org)
+	orgUUID, err := client.waitUntilOrgIdle(ctx, org)
 	if err != nil {
 		return fmt.Errorf("wait for org %s to go active failed with error %w", org, err)
 	}
@@ -123,206 +87,89 @@ func (TenantUtils) CreateOrg(ctx context.Context, org string) error {
 	return nil
 }
 
-func waitUntilOrgWatcherCreation(ctx context.Context, nexusClient *nexus_client.Clientset, org string) (string, error) {
-	println("\nwaiting until org active watchers are completed")
-	runtimeNode := nexusClient.TenancyMultiTenancy().Runtime()
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			orgRuntimeNode, err := runtimeNode.GetOrgs(ctx, org)
-			if err != nil {
-				return "", err
-			}
-			ktcWatcher, err := orgRuntimeNode.GetActiveWatchers(ctx, "keycloak-tenant-controller")
-			if err != nil {
-				return "", err
-			}
-			if string(ktcWatcher.Spec.StatusIndicator) == string(orgsv1.StatusIndicationIdle) {
-				return ktcWatcher.Spec.Message, nil
-			}
-		case <-timeout:
-			return "", fmt.Errorf("KTC active watcher for org %s creation timed out", org)
-		}
-	}
-}
-
-func waitUntilOrgCreation(ctx context.Context, nexusClient *nexus_client.Clientset, org string) (string, error) {
-	println("\nwaiting until org creation is completed")
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			orgNode, _ := configNode.GetOrgs(ctx, org)
-			if orgNode.Status.OrgStatus.StatusIndicator == orgsv1.StatusIndicationIdle {
-				return orgNode.Status.OrgStatus.UID, nil
-			}
-		case <-timeout:
-			return "", fmt.Errorf("org %s creation timed out", org)
-		}
-	}
-}
-
 // DeleteOrg deletes an Org in the system
 func (TenantUtils) DeleteOrg(ctx context.Context, org string) error {
-	orgId, _ := getOrgId(ctx, org)
-	if orgId == "" {
-		fmt.Printf("Org (%s) not present to delete. Skipping delete \n", org)
-		return nil
-	}
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
-	if err != nil {
-		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
-	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
-		return fmt.Errorf("\nerror creating org (%s). Error: %w", org, err)
-	}
-	orgNode := configNode.Orgs(org)
-	if orgNode == nil {
-		return fmt.Errorf("\nerror retrieving the org node")
-	}
-	err = orgNode.DeleteFolders(ctx, "default")
-	if err != nil {
-		return fmt.Errorf("\nerror deleting folder 'default' under org (%s). Error: %w", org, err)
-	}
-	err = configNode.DeleteOrgs(ctx, org)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
 		return fmt.Errorf("\nerror deleting org (%s). Error: %w", org, err)
 	}
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			_, err := configNode.GetOrgs(ctx, org)
-			if nexus_client.IsNotFound(err) {
-				fmt.Println("org not found, deleted successfully")
-				return nil
-			}
-		case <-timeout:
-			return fmt.Errorf("org %s deletion timed out", org)
-		}
+	if uid, _ := lookupOrgUID(ctx, client, org); uid == "" {
+		fmt.Printf("Org (%s) not present to delete. Skipping delete \n", org)
+		return nil
 	}
+	if err := client.DeleteOrg(ctx, org); err != nil {
+		return fmt.Errorf("\nerror deleting org (%s). Error: %w", org, err)
+	}
+	if err := client.waitUntilOrgGone(ctx, org); err != nil {
+		return err
+	}
+	fmt.Println("org not found, deleted successfully")
+	return nil
 }
 
-// DeleteProject deletes an Org in the system
+// DeleteProject deletes a Project in the system
 func (TenantUtils) DeleteProject(ctx context.Context, org, project string) error {
-	projectId, _ := GetProjectId(ctx, org, project)
-	if projectId == "" {
+	client, err := newTenancyRESTClient(ctx)
+	if err != nil {
+		return fmt.Errorf("\nerror deleting project (%s). Error: %w", project, err)
+	}
+	if uid, _ := lookupProjectUID(ctx, client, project); uid == "" {
 		fmt.Printf("Project (%s) not present to delete. Skipping delete \n", project)
 		return nil
 	}
 	fmt.Printf("Deleting Project (%s)\n", project)
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
-	if err != nil {
+	if err := client.DeleteProject(ctx, org, project); err != nil {
 		return fmt.Errorf("\nerror deleting project (%s). Error: %w", project, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
-		return fmt.Errorf("\nerror retrieving the config node")
-	}
-	orgNode := configNode.Orgs(org)
-	if orgNode == nil {
-		return fmt.Errorf("\nerror retrieving the org node")
-	}
+	return client.waitUntilProjectGone(ctx, org, project)
+}
 
-	folder := orgNode.Folders("default")
-	if folder == nil {
-		return fmt.Errorf("\nerror retrieving the folder node")
+// lookupOrgUID returns the org UID, or "" with errTenancyNotFound when absent.
+func lookupOrgUID(ctx context.Context, client *tenancyRESTClient, orgName string) (string, error) {
+	org, err := client.GetOrg(ctx, orgName)
+	if isTenancyNotFound(err) {
+		return "", err
 	}
-
-	err = folder.DeleteProjects(ctx, project)
 	if err != nil {
-		return fmt.Errorf("\nerror deleting project (%s). Error: %w", org, err)
+		return "", fmt.Errorf("\nerror checking if the org (%s) already present: Error: %w", orgName, err)
 	}
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			_, err := folder.GetProjects(ctx, project)
-			if nexus_client.IsNotFound(err) {
-				return nil
-			}
-		case <-timeout:
-			fmt.Println("project deletion timed out")
-			prj, err := folder.GetProjects(ctx, project)
-			if nexus_client.IsNotFound(err) {
-				return nil
-			}
-			fmt.Printf("\nProject status after time out - %v \n", prj.Status.ProjectStatus.Message)
-			return fmt.Errorf("project %s deletion timed out", project)
-		}
-	}
+	return org.Status.OrgStatus.UID, nil
 }
 
 func getOrgId(ctx context.Context, orgName string) (string, error) {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("\nerror checking if the org (%s) already present. Error: %w", orgName, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
-		return "", fmt.Errorf("\nerror checking if the org (%s) already present: Error: %w", orgName, err)
-	}
-
-	org, _ := configNode.GetOrgs(ctx, orgName)
-	if org == nil {
+	uid, err := lookupOrgUID(ctx, client, orgName)
+	if isTenancyNotFound(err) {
 		fmt.Printf("org %s does not exist.\n", orgName)
 		return "", nil
 	}
-
-	orgStatus, err := org.GetOrgStatus(ctx)
-	if orgStatus == nil || err != nil {
-		return "", fmt.Errorf("\nerror checking if the org (%s) already present: Error: %w", orgName, err)
-	}
-
-	return orgStatus.UID, nil
+	return uid, err
 }
 
 // GetOrg gets the Org in the system: mage tenantUtils:getOrg <org-name>
 func (TenantUtils) GetOrg(ctx context.Context, orgName string) error {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
 		return fmt.Errorf("\nerror retrieving the org (%s). Error: %w", orgName, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
+	org, err := client.GetOrg(ctx, orgName)
+	if isTenancyNotFound(err) {
+		return err
+	}
+	if err != nil {
 		return fmt.Errorf("\nerror retrieving the org (%s). Error: %w", orgName, err)
 	}
-
-	org := configNode.Orgs(orgName)
-	if org == nil {
-		fmt.Printf("org %s does not exist.\n", orgName)
-		return nil
-	}
-
-	orgStatus, err := org.GetOrgStatus(ctx)
-	if orgStatus == nil || err != nil {
-		return fmt.Errorf("\nerror retrieving the org (%s). Error: %w", orgName, err)
-	}
+	orgStatus := org.Status.OrgStatus
 	if strings.HasPrefix(orgStatus.Message, "Waiting for watchers") && strings.HasSuffix(orgStatus.Message, "to be deleted") {
 		return fmt.Errorf("\norg (%s) is waiting for watchers to be deleted with status message '%s'", orgName, orgStatus.Message)
 	}
-	if orgStatus.Message != fmt.Sprintf("Org %s CREATE is complete", orgName) {
-		return fmt.Errorf("\norg (%s) status message is set to %s", orgName, orgStatus.Message)
+	if orgStatus.StatusIndicator != statusIndicationIdle {
+		return fmt.Errorf("\norg (%s) status indicator is %s, message: %s", orgName, orgStatus.StatusIndicator, orgStatus.Message)
 	}
 	fmt.Printf("\nOrg status message - %s, Org status - %s\n", orgStatus.Message, orgStatus.StatusIndicator)
-	// println("orgId: ", orgStatus.UID)
 	return nil
 }
 
@@ -498,50 +345,22 @@ func KeycloakLogin(ctx context.Context) (*gocloak.GoCloak, *gocloak.JWT, error) 
 
 // CreateProjectInOrg creates a Project in a given Org: mage tenantUtils:createProjectInOrg <org-name> <project-name>
 func (TenantUtils) CreateProjectInOrg(ctx context.Context, orgName string, projectName string) error {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
 		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
+	if _, err := lookupOrgUID(ctx, client, orgName); err != nil {
+		if isTenancyNotFound(err) {
+			fmt.Printf("Org (%s) not found. Please create an org first\n", orgName)
+			return nil
+		}
 		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-
-	org := configNode.Orgs(orgName)
-	if org == nil {
-		fmt.Printf("Org (%s) not found. Please create an org first\n", orgName)
-		return nil
-	}
-
 	fmt.Printf("Creating Project (%s)\n", projectName)
-
-	folder, err := org.AddFolders(ctx, &folderv1.Folder{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "default",
-		},
-		Spec: folderv1.FolderSpec{},
-	})
-
-	if err != nil && !nexus_client.IsAlreadyExists(err) {
+	if err := client.CreateProject(ctx, orgName, projectName, projectName); err != nil {
 		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
 	}
-
-	_, err = folder.AddProjects(ctx, &projectv1.Project{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: projectName,
-		},
-		Spec: projectv1.ProjectSpec{
-			Description: projectName,
-		},
-	})
-	if err != nil && !nexus_client.IsAlreadyExists(err) {
-		return fmt.Errorf("\nerror creating project (%s). Error: %w", projectName, err)
-	}
-
-	// wait until keycloak roles
-	nexusClient.SubscribeAll()
-	projectUUID, err := waitUntilProjectCreation(ctx, nexusClient, orgName, projectName)
+	projectUUID, err := client.waitUntilProjectIdle(ctx, orgName, projectName)
 	if err != nil {
 		return fmt.Errorf("wait for project %s to go active failed with error %w", projectName, err)
 	}
@@ -550,160 +369,41 @@ func (TenantUtils) CreateProjectInOrg(ctx context.Context, orgName string, proje
 }
 
 func (TenantUtils) WaitUntilProjectReady(ctx context.Context, orgName, projectName string) (string, error) {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("\nerror creating nexus client (%s). Error: %w", projectName, err)
+		return "", fmt.Errorf("\nerror creating tenancy REST client (%s). Error: %w", projectName, err)
 	}
-
-	// SubscribeAll otherwise GetFolders() and GetProjects may fail after client is restarted
-	// Note that it may take a few moments for the subscription to populate the in-memory cache.
-	nexusClient.SubscribeAll()
-
-	return waitUntilProjectCreation(ctx, nexusClient, orgName, projectName)
-}
-
-func waitUntilProjectCreation(ctx context.Context, nexusClient *nexus_client.Clientset, orgName, projectName string) (string, error) {
-	println("\nwaiting until project creation is completed")
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	orgNode, err := configNode.GetOrgs(ctx, orgName)
-	if err != nil {
-		return "", err
-	}
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			folder, err := orgNode.GetFolders(ctx, "default")
-			if nexus_client.IsNotFound(err) {
-				// not found most probably happened because nexus client cache is not loaded yet.
-				continue
-			}
-			if err != nil {
-				return "", err
-			}
-
-			project, err := folder.GetProjects(ctx, projectName)
-			if nexus_client.IsNotFound(err) {
-				// not found most probably happened because nexus client cache is not loaded yet.
-				continue
-			}
-			if err != nil {
-				return "", err
-			}
-			fmt.Printf("project %v status - %v (%s)\n", projectName, project.Status.ProjectStatus.StatusIndicator, project.Status.ProjectStatus.Message)
-			if project.Status.ProjectStatus.StatusIndicator == projectv1.StatusIndicationIdle {
-				return project.Status.ProjectStatus.UID, nil
-			}
-		case <-timeout:
-			return "", fmt.Errorf("project %s creation timed out", projectName)
-		}
-	}
+	return client.waitUntilProjectIdle(ctx, orgName, projectName)
 }
 
 func (TenantUtils) WaitUntilProjectWatchersReady(ctx context.Context, orgName, projectName string) (string, error) {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	// In the new tenancy-manager REST architecture, the project's STATUS_INDICATION_IDLE
+	// is reported only after all controllers have completed their work, so a separate
+	// active-watcher poll is no longer required.
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("\nerror creating nexus client (%s). Error: %w", projectName, err)
+		return "", fmt.Errorf("\nerror creating tenancy REST client (%s). Error: %w", projectName, err)
 	}
-
-	return waitUntilProjectActiveWatchersCreated(ctx, nexusClient, orgName, projectName)
-}
-
-func waitUntilProjectActiveWatchersCreated(ctx context.Context, nexusClient *nexus_client.Clientset,
-	orgName, projectName string,
-) (string, error) {
-	configNode, err := nexusClient.TenancyMultiTenancy().GetConfig(ctx)
-	if err != nil {
+	if _, err := client.waitUntilProjectIdle(ctx, orgName, projectName); err != nil {
 		return "", err
 	}
-	projectWatchers, err := configNode.GetAllProjectWatchers(ctx)
-	if err != nil {
-		return "", err
-	}
-	var watchersList []string
-	for _, watcher := range projectWatchers {
-		watchersList = append(watchersList, watcher.GetLabels()["nexus/display_name"])
-	}
-	runtimeNode := nexusClient.TenancyMultiTenancy().Runtime()
-	rtorgNode, err := runtimeNode.GetOrgs(ctx, orgName)
-	if err != nil {
-		return "", err
-	}
-	rtfolder, err := rtorgNode.GetFolders(ctx, "default")
-	if err != nil {
-		return "", err
-	}
-	rtproject, err := rtfolder.GetProjects(ctx, projectName)
-	if err != nil {
-		return "", err
-	}
-	timeout := time.After(5 * time.Minute)
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			activeWatchers, err := rtproject.GetAllActiveWatchers(ctx)
-			if err != nil {
-				return "", err
-			}
-			if len(activeWatchers) < len(projectWatchers) {
-				fmt.Println("projectActiveWatchers count is lesser than projectWatchers. Waiting...")
-				continue
-			}
-			var notReadyList []string
-			for _, acw := range activeWatchers {
-				if slices.Contains(watchersList, acw.GetLabels()["nexus/display_name"]) {
-					if acw.Spec.StatusIndicator != "STATUS_INDICATION_IDLE" {
-						notReadyList = append(notReadyList, acw.GetLabels()["nexus/display_name"])
-					}
-				}
-			}
-			fmt.Printf("Watchers [%v] are not yet set to STATUS_INDICATION_IDLE\n", notReadyList)
-			if len(notReadyList) == 0 {
-				fmt.Println("projectActiveWatchers created and in idle state")
-				return "all watchers ready and in idle state", nil
-			}
-		case <-timeout:
-			return "", fmt.Errorf("project active watchers %s creation timed out", projectName)
-		}
-	}
+	return "all watchers ready and in idle state", nil
 }
 
 // GetProject gets the Project in the system: mage tenantUtils:getProject <org-name> <project-name>
 func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) error {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
 		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
+	proj, err := client.GetProject(ctx, orgName, projectName)
+	if isTenancyNotFound(err) {
+		return err
+	}
+	if err != nil {
 		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
-
-	org := configNode.Orgs(orgName)
-	if org == nil {
-		fmt.Printf("org %s does not exist.\n", orgName)
-		return nil
-	}
-
-	folder := org.Folders("default")
-	if folder == nil {
-		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
-	}
-
-	project := folder.Projects(projectName)
-	projectStatus, err := project.GetProjectStatus(ctx)
-	if projectStatus == nil || err != nil {
-		return fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
-	}
+	projectStatus := proj.Status.ProjectStatus
 	if strings.Contains(projectStatus.Message, "Waiting for watchers") {
 		return fmt.Errorf("\nproject (%s) status message is set to %s", projectName, projectStatus.Message)
 	}
@@ -712,35 +412,32 @@ func (TenantUtils) GetProject(ctx context.Context, orgName, projectName string) 
 	return nil
 }
 
+// lookupProjectUID returns the project UID, or "" with errTenancyNotFound when absent.
+func lookupProjectUID(ctx context.Context, client *tenancyRESTClient, projectName string) (string, error) {
+	proj, err := client.GetProject(ctx, "", projectName)
+	if isTenancyNotFound(err) {
+		return "", err
+	}
+	if err != nil {
+		return "", err
+	}
+	return proj.Status.ProjectStatus.UID, nil
+}
+
 func GetProjectId(ctx context.Context, orgName, projectName string) (string, error) {
-	config := ctrl.GetConfigOrDie()
-	nexusClient, err := nexus_client.NewForConfig(config)
+	client, err := newTenancyRESTClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
-	configNode := nexusClient.TenancyMultiTenancy().Config()
-	if configNode == nil {
-		return "", fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
-	}
-
-	org := configNode.Orgs(orgName)
-	if org == nil {
-		fmt.Printf("org %s does not exist.\n", orgName)
+	uid, err := lookupProjectUID(ctx, client, projectName)
+	if isTenancyNotFound(err) {
+		fmt.Printf("project %s does not exist.\n", projectName)
 		return "", nil
 	}
-
-	folder := org.Folders("default")
-	if folder == nil {
+	if err != nil {
 		return "", fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
 	}
-
-	project := folder.Projects(projectName)
-	projectStatus, err := project.GetProjectStatus(ctx)
-	if projectStatus == nil || err != nil {
-		return "", fmt.Errorf("\nerror retrieving the project (%s). Error: %w", projectName, err)
-	}
-
-	return projectStatus.UID, nil
+	return uid, nil
 }
 
 // CreateEdgeInfraUsers creates Edge Infra Manager users in a given Project:

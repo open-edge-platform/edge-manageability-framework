@@ -48,6 +48,7 @@ api:
 apiv2:
   eimScenario: {{ index .Values.argo "infra-core" "eimScenario" | default "fulleim" }}
   serviceArgsProxy:
+    nexusAPIURL: "http://tenancy-manager.orch-iam.svc:8080"
     globalLogLevel: "debug"
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
   serviceArgsGrpc:
@@ -96,6 +97,8 @@ inventory:
     enabled: {{ index .Values.argo "infra-core" "enableMetrics" | default false }}
 
 tenant-controller:
+  image:
+    tag: "nexus-replacement-20260511"
   managerArgs:
     enableTracing: {{ index .Values.argo "infra-core" "enableTracing" | default false }}
     skipOSProvisioning: {{ index .Values.argo "infra-core" "skipOSProvisioning" | default false }}

@@ -42,3 +42,6 @@ catalogServer:
   {{- if .Values.argo.proxy.noProxy}}
   noProxy: "{{ .Values.argo.proxy.noProxy }}"
   {{- end}}
+serviceArgs:
+  restProxy:
+    project-service-url: "http://tenancy-manager.orch-iam.svc:8080"

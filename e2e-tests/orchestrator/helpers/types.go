@@ -7,21 +7,50 @@ package helpers
 import (
 	"net/http"
 	"time"
-
-	baseorginfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/org.edge-orchestrator.intel.com/v1"
-	baseprojectinfrahostcomv1 "github.com/open-edge-platform/orch-utils/tenancy-datamodel/build/apis/project.edge-orchestrator.intel.com/v1"
 )
 
+// orgSpec / orgNexusStatus / projectSpec / projectNexusStatus are minimal, JSON-shape
+// duplicates of the types previously imported from
+// github.com/open-edge-platform/orch-utils/tenancy-datamodel. They mirror the
+// tenancy-manager REST API response body.
+type orgSpec struct {
+	Description string `json:"description,omitempty"`
+}
+
+type orgStatusInner struct {
+	StatusIndicator string `json:"statusIndicator,omitempty"`
+	Message         string `json:"message,omitempty"`
+	UID             string `json:"UID,omitempty"`
+}
+
+type orgNexusStatus struct {
+	OrgStatus orgStatusInner `json:"orgStatus,omitempty"`
+}
+
+type projectSpec struct {
+	Description string `json:"description,omitempty"`
+}
+
+type projectStatusInner struct {
+	StatusIndicator string `json:"statusIndicator,omitempty"`
+	Message         string `json:"message,omitempty"`
+	UID             string `json:"UID,omitempty"`
+}
+
+type projectNexusStatus struct {
+	ProjectStatus projectStatusInner `json:"projectStatus,omitempty"`
+}
+
 type orgs struct {
-	Name   string                                `json:"name,omitempty" yaml:"name,omitempty"`
-	Spec   *baseorginfrahostcomv1.OrgSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
-	Status *baseorginfrahostcomv1.OrgNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
+	Name   string          `json:"name,omitempty" yaml:"name,omitempty"`
+	Spec   *orgSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Status *orgNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
 type projects struct {
-	Name   string                                        `json:"name,omitempty" yaml:"name,omitempty"`
-	Spec   *baseprojectinfrahostcomv1.ProjectSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
-	Status *baseprojectinfrahostcomv1.ProjectNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
+	Name   string              `json:"name,omitempty" yaml:"name,omitempty"`
+	Spec   *projectSpec        `json:"spec,omitempty" yaml:"spec,omitempty"`
+	Status *projectNexusStatus `json:"status,omitempty" yaml:"status,omitempty"`
 }
 
 type metricsResponse struct {

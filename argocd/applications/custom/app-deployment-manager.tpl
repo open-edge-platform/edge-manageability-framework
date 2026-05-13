@@ -19,6 +19,11 @@ image:
     {{- end }}
 
 adm:
+  image:
+    tag: "nexus-replacement-20260511"
+  extraEnv:
+    - name: TENANT_MANAGER_URL
+      value: "http://tenancy-manager.orch-iam.svc:8080"
   gitProxy: {{ .Values.argo.git.gitProxy }}
 {{- if .Values.argo.git.gitServer }}
   gitServer: {{ .Values.argo.git.gitServer }}
@@ -40,6 +45,10 @@ adm:
 {{- end }}
 
 gateway:
+  image:
+    tag: "nexus-replacement-20260511"
+  serviceArgs:
+    nexus-api-url: "http://tenancy-manager.orch-iam.svc:8080"
   deployment:
     namespace: {{ .Values.argo.adm.deploymentNamespace }}
 {{- with .Values.argo.resources.appDeploymentManager.gateway }}
