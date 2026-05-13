@@ -221,7 +221,7 @@ releases:
     chart: prometheus/prometheus-operator-crds
     wait: true
     version: 24.0.1
-    condition: edgenode-observability.enabled
+    condition: observability-crds.enabled
     needs:
       - ns-label/namespace-label
 
