@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: (C) 2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 name: "Deploy On-Prem Orchestrator (Helmfile)"
 description: "Deploys the on-prem orchestrator using helmfile — runs pre-orch and post-orch deploy steps"
 inputs:
@@ -18,7 +17,6 @@ inputs:
   docker_password:
     required: true
     description: "Docker Hub password for pulling images"
-
 runs:
   using: "composite"
   steps:
@@ -28,16 +26,13 @@ runs:
         repository: open-edge-platform/edge-manageability-framework
         ref: ${{ inputs.orch_version }}
         persist-credentials: false
-
     - name: Print system info
       shell: bash
       run: |
         echo "CPU Cores: $(nproc)"
         echo "Total Memory: $(grep MemTotal /proc/meminfo | awk '{print $2/1024/1024 " GB"}')"
         echo "Total Disk: $(df -h --total | grep total | awk '{print $2}')"
-    
     # ── Detect Host IP ────────────────────────────────────────────────────────
-
     - name: Detect host IP
       id: host-ip
       shell: bash
@@ -55,7 +50,6 @@ runs:
         fi
         echo "Detected host IP: $ip_address (interface: $interface_name)"
         echo "host_ip=$ip_address" >> "$GITHUB_OUTPUT"
-
     - name: Update env files with detected host IP
       shell: bash
       env:
@@ -63,22 +57,17 @@ runs:
         ORCH_PROFILE: ${{ inputs.orch_profile }}
       run: |
         echo "Updating pre-orch.env and post-orch.env with EMF_ORCH_IP=$HOST_IP, EMF_HELMFILE_ENV=$ORCH_PROFILE"
-
         # pre-orch.env: uncomment and set EMF_ORCH_IP, comment out individual IPs
         sed -i "s|^#EMF_ORCH_IP=.*|EMF_ORCH_IP=$HOST_IP|" pre-orch/pre-orch.env
         sed -i "s|^EMF_TRAEFIK_IP=|#EMF_TRAEFIK_IP=|" pre-orch/pre-orch.env
         sed -i "s|^EMF_HAPROXY_IP=|#EMF_HAPROXY_IP=|" pre-orch/pre-orch.env
-
         # post-orch.env: uncomment and set EMF_ORCH_IP, comment out individual IPs, set profile
         sed -i "s|^#EMF_ORCH_IP=.*|EMF_ORCH_IP=$HOST_IP|" post-orch/post-orch.env
         sed -i "s|^EMF_TRAEFIK_IP=|#EMF_TRAEFIK_IP=|" post-orch/post-orch.env
         sed -i "s|^EMF_HAPROXY_IP=|#EMF_HAPROXY_IP=|" post-orch/post-orch.env
         sed -i "s|^EMF_HELMFILE_ENV=.*|EMF_HELMFILE_ENV=$ORCH_PROFILE|" post-orch/post-orch.env
-
         echo "✅ Both env files updated"
-
     # ── Pre-Orch Deploy ──────────────────────────────────────────────────────
-
     - name: Run pre-orch deploy
       shell: bash
       working-directory: pre-orch
@@ -91,7 +80,6 @@ runs:
         timeout 300 ./pre-orch.sh k3s install \
           --docker-username "$DOCKER_USERNAME" \
           --docker-password "$DOCKER_PASSWORD"
-
     - name: Verify pre-orch deployment
       shell: bash
       run: |
@@ -100,9 +88,7 @@ runs:
         echo "Waiting for all pods to be ready..."
         kubectl wait --for=condition=Ready pods --all -A --timeout=120s || true
         kubectl get pods -A
-
     # ── Post-Orch Deploy ─────────────────────────────────────────────────────
-
     - name: Run post-orch deploy
       shell: bash
       working-directory: post-orch
@@ -112,7 +98,6 @@ runs:
         echo "▶ Starting post-orch deploy (profile: $EMF_HELMFILE_ENV) [timeout: 20m]"
         chmod +x post-orch-deploy.sh
         timeout 1200 ./post-orch-deploy.sh install
-
     - name: Verify post-orch deployment
       shell: bash
       working-directory: post-orch
@@ -120,18 +105,14 @@ runs:
         echo "Verifying post-orch deployment..."
         chmod +x watch-deploy.sh
         ./watch-deploy.sh
-
     # ── Install Orch CA Certificate ──────────────────────────────────────────
-
     - name: Install orchestrator CA certificate
       shell: bash
       run: |
         kubectl get secret -n orch-gateway tls-orch -o jsonpath="{.data.tls\.crt}" | base64 -d > orch-ca.crt
         sudo cp -rf orch-ca.crt /usr/local/share/ca-certificates/
         sudo update-ca-certificates -f
-
     # ── Diagnostics ──────────────────────────────────────────────────────────
-
     - name: Get diagnostic information
       id: get-diagnostic-info
       if: always()
@@ -144,7 +125,6 @@ runs:
         kubectl describe pods -A > "$ORCH_PROFILE-diagnostics/pods-describe.txt"
         kubectl get events -o yaml -A > "$ORCH_PROFILE-diagnostics/events.yaml"
         helm list -A > "$ORCH_PROFILE-diagnostics/helm-releases.txt"
-
     - name: Upload diagnostic information to CI artifact store
       if: always() && steps.get-diagnostic-info.conclusion == 'success'
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2

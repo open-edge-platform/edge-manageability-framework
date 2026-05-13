@@ -1,18 +1,14 @@
 ---
 # SPDX-FileCopyrightText: (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 name: Pre-Merge-EMF-Helmdeploy CI Pipeline
-
 on:
   pull_request:
     branches:
       - EMF_HELMDEPLOY_2026_01
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   pre-checks:
     runs-on: 'ubuntu-latest'
@@ -32,7 +28,6 @@ jobs:
       run_version_check: false
       run_test: false
       trivy_config_path: trivy.yaml
-      
   final-check:
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -43,9 +38,7 @@ jobs:
       - name: Final Status Check
         run: |
           pre_merge_pipeline_result="${RESULT}"
-
           echo "Pre-merge pipeline result: $pre_merge_pipeline_result"
-
           if [ "$pre_merge_pipeline_result" == "success" ] || [ "$pre_merge_pipeline_result" == "skipped" ]; then
             echo "Pre-merge check passed successfully."
           else

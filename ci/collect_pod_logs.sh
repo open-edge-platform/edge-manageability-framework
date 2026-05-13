@@ -24,32 +24,32 @@ rm -rf "$OUTPUT_DIR" "$ARCHIVE_NAME"
 mkdir -p "$SUCCESS_DIR" "$FAILED_DIR"
 
 echo "🔍 Collecting cluster pod summary..."
-kubectl get pods -A > "$OUTPUT_DIR/summary-pods.txt" 2>&1
+kubectl get pods -A >"$OUTPUT_DIR/summary-pods.txt" 2>&1
 
 echo "📦 Collecting application summary..."
-kubectl get application -A > "$OUTPUT_DIR/summary-applications.txt" 2>&1 || \
-echo "No 'application' resource found or CRD not installed." >> "$OUTPUT_DIR/summary-applications.txt"
+kubectl get application -A >"$OUTPUT_DIR/summary-applications.txt" 2>&1 \
+  || echo "No 'application' resource found or CRD not installed." >>"$OUTPUT_DIR/summary-applications.txt"
 
 echo "🔎 Collecting logs and descriptions for all pods..."
 
-kubectl get pods -A --no-headers | \
-awk '{print $1, $2, $4}' | \
-while read -r NAMESPACE POD STATUS; do
+kubectl get pods -A --no-headers \
+  | awk '{print $1, $2, $4}' \
+  | while read -r NAMESPACE POD STATUS; do
     BASE_FILENAME="${NAMESPACE}-${POD}"
     TARGET_DIR="$FAILED_DIR"
 
     if [[ "$STATUS" == "Running" || "$STATUS" == "Completed" ]]; then
-        TARGET_DIR="$SUCCESS_DIR"
+      TARGET_DIR="$SUCCESS_DIR"
     fi
 
     echo "📄 Saving description for pod: $NAMESPACE/$POD"
-    kubectl describe pod "$POD" -n "$NAMESPACE" > "$TARGET_DIR/${BASE_FILENAME}-describe.txt" 2>&1 || \
-    echo "Failed to describe $POD" >> "$TARGET_DIR/${BASE_FILENAME}-error.log"
+    kubectl describe pod "$POD" -n "$NAMESPACE" >"$TARGET_DIR/${BASE_FILENAME}-describe.txt" 2>&1 \
+      || echo "Failed to describe $POD" >>"$TARGET_DIR/${BASE_FILENAME}-error.log"
 
     echo "📋 Saving logs for pod: $NAMESPACE/$POD"
-    kubectl logs "$POD" -n "$NAMESPACE" > "$TARGET_DIR/${BASE_FILENAME}-logs.txt" 2>&1 || \
-    echo "Failed to get logs for $POD" >> "$TARGET_DIR/${BASE_FILENAME}-error.log"
-done
+    kubectl logs "$POD" -n "$NAMESPACE" >"$TARGET_DIR/${BASE_FILENAME}-logs.txt" 2>&1 \
+      || echo "Failed to get logs for $POD" >>"$TARGET_DIR/${BASE_FILENAME}-error.log"
+  done
 
 echo "📦 Creating archive: $ARCHIVE_NAME"
 tar -czf "$ARCHIVE_NAME" "$OUTPUT_DIR"

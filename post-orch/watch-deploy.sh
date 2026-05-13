@@ -12,7 +12,9 @@ MODE="${1:-info}"
 HELMFILE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source environment
 if [[ -f "$HELMFILE_DIR/post-orch.env" ]]; then
-  set -a; source "$HELMFILE_DIR/post-orch.env"; set +a
+  set -a
+  source "$HELMFILE_DIR/post-orch.env"
+  set +a
 fi
 HELMFILE_ENV="${EMF_HELMFILE_ENV:-onprem-eim}"
 # Get enabled releases
@@ -51,9 +53,10 @@ while read -r name; do
             wl+="      ✅ pod/$pname ($ready)"$'\n'
           else
             wl+="      ⏳ pod/$pname ($ready)"$'\n'
-          fi ;;
+          fi
+          ;;
         Completed) wl+="      ✅ pod/$pname (done)"$'\n' ;;
-        *)         wl+="      ❌ pod/$pname ($pstatus)"$'\n' ;;
+        *) wl+="      ❌ pod/$pname ($pstatus)"$'\n' ;;
       esac
     done < <(echo "$pod_snapshot" | awk -v ns="$ns" -v r="$name" '$1==ns && $2 ~ "^"r {print $2, $3, $4}')
     while read -r jname completions _; do
@@ -86,15 +89,15 @@ while read -r name; do
       queued_lines+="  ⏳  $name"$'\n'
       ;;
   esac
-done <<< "$releases"
-done_count=$(( deployed + failed ))
+done <<<"$releases"
+done_count=$((deployed + failed))
 pct=0
-(( total > 0 )) && pct=$(( done_count * 100 / total ))
+((total > 0)) && pct=$((done_count * 100 / total))
 echo ""
 echo "  EMF Deployment Status  ($HELMFILE_ENV)  [$MODE]"
 echo "  ════════════════════════════════════════════════"
 printf "  Progress: %d/%d (%d%%)   ✅ %d  ❌ %d  ⏳ %d\n" \
-  "$done_count" "$total" "$pct" "$deployed" "$failed" $(( pending + queued ))
+  "$done_count" "$total" "$pct" "$deployed" "$failed" $((pending + queued))
 echo "  ════════════════════════════════════════════════"
 if [[ -n "$failed_lines" ]]; then
   echo ""
@@ -117,9 +120,9 @@ if [[ -n "$deployed_lines" ]]; then
   echo -n "$deployed_lines"
 fi
 echo ""
-if (( deployed == total && failed == 0 )); then
+if ((deployed == total && failed == 0)); then
   echo "  ✅  ALL $total RELEASES DEPLOYED"
-elif (( done_count == total )); then
+elif ((done_count == total)); then
   echo "  ⚠️   DONE WITH $failed FAILURE(S)"
 fi
 echo ""

@@ -30,7 +30,12 @@ EXCLUDE_PATHS      := -not -path '*/.git/*' \
                       -not -path '*/.cache/*' \
                       -not -path '*/logs/*'
 
-YAML_FILES         := $(shell find $(ROOT_DIR) -type f \( -name '*.yaml' -o -name '*.yml' \) $(EXCLUDE_PATHS) 2>/dev/null)
+# Helm chart templates contain gotmpl directives ({{- ... }}); yamllint cannot
+# parse them. They are validated by lint-helmfile / helm lint instead.
+YAML_EXCLUDE_PATHS := $(EXCLUDE_PATHS) \
+                      -not -path '*/templates/*'
+
+YAML_FILES         := $(shell find $(ROOT_DIR) -type f \( -name '*.yaml' -o -name '*.yml' \) $(YAML_EXCLUDE_PATHS) 2>/dev/null)
 GOTMPL_FILES       := $(shell find $(ROOT_DIR) -type f -name '*.gotmpl' $(EXCLUDE_PATHS) 2>/dev/null)
 SHELL_FILES        := $(shell find $(ROOT_DIR) -type f -name '*.sh' $(EXCLUDE_PATHS) 2>/dev/null)
 

@@ -63,7 +63,7 @@ curl -s -G "http://${EN_LOKI_URL}/loki/api/v1/query_range" \
   --data-urlencode "end=${end_time}" \
   --data-urlencode "direction=forward" \
   --data-urlencode 'query={file_type="uOS_bootkitLogs"}' \
-  | jq -r '.data.result[]?.values[]? | .[]' > uOS_bootkit.log
+  | jq -r '.data.result[]?.values[]? | .[]' >uOS_bootkit.log
 
 cat uOS_bootkit.log || true
 echo "Start uOS_caddyLogs"
@@ -74,7 +74,7 @@ curl -s -G "http://${EN_LOKI_URL}/loki/api/v1/query_range" \
   --data-urlencode "end=${end_time}" \
   --data-urlencode "direction=forward" \
   --data-urlencode 'query={file_type="uOS_caddyLogs"}' \
-  | jq -r '.data.result[]?.values[]? | .[]' > uOS_caddy.log
+  | jq -r '.data.result[]?.values[]? | .[]' >uOS_caddy.log
 cat uOS_caddy.log || true
 
 lsof -t -i :8087 | xargs -r kill 2>/dev/null || true
