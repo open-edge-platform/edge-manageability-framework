@@ -691,7 +691,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-api-mapping
     wait: true
-    version: 26.1.2
+    version: 26.1.4
     values:
       - values/tenancy-api-mapping.yaml.gotmpl
     condition: tenancy-api-mapping.enabled
@@ -708,7 +708,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-manager
     wait: true
-    version: 26.1.1
+    version: 26.1.2
     values:
       - values/tenancy-manager.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -751,7 +751,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/keycloak-tenant-controller
     wait: true
-    version: 26.1.1
+    version: 26.1.12
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -802,7 +802,7 @@ releases:
     namespace: orch-secret
     chart: edge-orch/common/charts/token-fs
     wait: true
-    version: 26.1.1
+    version: 26.1.2
     values:
       - values/token-fs.yaml.gotmpl
     condition: token-fs.enabled
@@ -910,7 +910,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/auth-service
     wait: true
-    version: 26.1.9
+    version: 26.1.10
     values:
       - values/auth-service.yaml.gotmpl
       - values/resource-overrides.yaml
