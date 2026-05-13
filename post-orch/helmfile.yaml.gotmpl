@@ -750,7 +750,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-datamodel
     wait: true
-    version: 26.1.0
+    version: 26.1.1
     values:
       - values/tenancy-datamodel.yaml.gotmpl
     condition: tenancy-datamodel.enabled
@@ -786,7 +786,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-api-mapping
     wait: true
-    version: 26.1.1
+    version: 26.1.4
     values:
       - values/tenancy-api-mapping.yaml.gotmpl
     condition: tenancy-api-mapping.enabled
@@ -803,7 +803,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-manager
     wait: true
-    version: 26.1.0
+    version: 26.1.2
     values:
       - values/tenancy-manager.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -825,7 +825,7 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/nexus-api-gw
     wait: true
-    version: 26.1.0
+    version: 26.1.2
     values:
       - values/nexus-api-gw.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -846,7 +846,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/keycloak-tenant-controller
     wait: true
-    version: 26.1.0
+    version: 26.1.12
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -867,7 +867,7 @@ releases:
     chart: edge-orch/common/charts/tenancy-init
     wait: true
     waitForJobs: true
-    version: 26.1.0
+    version: 26.1.1
     values:
       - values/tenancy-init.yaml.gotmpl
     condition: tenancy-init.enabled
@@ -897,7 +897,7 @@ releases:
     namespace: orch-secret
     chart: edge-orch/common/charts/token-fs
     wait: true
-    version: 26.1.0
+    version: 26.1.2
     values:
       - values/token-fs.yaml.gotmpl
     condition: token-fs.enabled
@@ -972,7 +972,7 @@ releases:
     namespace: orch-platform
     chart: edge-orch/common/charts/component-status
     wait: true
-    version: 26.1.0
+    version: 26.1.3
     values:
       - values/component-status.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -1025,7 +1025,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/auth-service
     wait: true
-    version: 26.1.0
+    version: 26.1.10
     values:
       - values/auth-service.yaml.gotmpl
       - values/resource-overrides.yaml
