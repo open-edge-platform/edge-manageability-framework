@@ -93,7 +93,7 @@ keycloak:
     - name: log-console-output
       value: json
 m2mSecretsExtractor:
-  keycloak_url: http://platform-keycloak.orch-platform.svc.cluster.local:8080/auth
+  keycloak_url: "http://platform-keycloak.{{ .Release.Namespace }}.svc.cluster.local:8080/auth"
 
 # Keycloak Config CLI job configuration
 keycloakConfigCli:
