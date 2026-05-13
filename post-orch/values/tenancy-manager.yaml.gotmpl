@@ -5,8 +5,8 @@
 image:
   registry: {{ .Values.containerRegistryURL }}
   repository: common/tenancy-manager
-  {{- if env "NEXUS_REPLACEMENT_TAG" }}
-  tag: "{{ env "NEXUS_REPLACEMENT_TAG" }}"
+  {{- if env "TENANCY_V2_TAG" }}
+  tag: "{{ env "TENANCY_V2_TAG" }}"
   {{- end }}
 imagePullSecrets: []
 
@@ -25,6 +25,8 @@ resources: null
 #   /v1/projects, /v1/projects/{name}, /v1/projects/{name}/status
 # Project-scoped paths like "/v1/projects/{name}/compute/*" must fall through
 # to nexus-api-gw which proxies to the appropriate backend service.
+#
+# Tenancy v2 mode is always on; the legacy Nexus-CRD path is removed.
 ingress:
   enabled: true
   entryPoints:
@@ -42,12 +44,11 @@ ingress:
       namespace: orch-gateway
     secretName: {{ .Values.tlsSecret }}
 
-{{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
-# ─── Nexus Replacement: Postgres-backed tenancy-manager ──────────────────────
-# The new tenancy-manager (orch-utils@utils_nexus_replacement, chart v26.1.3+)
-# stores tenancy state in Postgres via Ent and exposes a REST API.
-# These postgres credentials match the secret created by post-orch/pre-orch-config.sh
-# and the orch-iam-iam-tenancy database created by postgresql-secrets.
+# ─── Tenancy v2: Postgres-backed tenancy-manager ─────────────────────────────
+# The new tenancy-manager stores tenancy state in
+# Postgres via Ent and exposes a REST API. These postgres credentials match the
+# secret created by post-orch/pre-orch-config.sh and the orch-iam-iam-tenancy
+# database created by postgresql-secrets.
 postgresql:
   existingSecret: "iam-tenancy-local-postgresql"
   existingSecretPasswordKey: "PGPASSWORD"
@@ -88,4 +89,3 @@ tenancyManager:
       {{- if (.Values | get "metadata-broker.enabled" false) }}
       - metadata-broker
       {{- end }}
-{{- end }}

@@ -14,7 +14,7 @@
 #   3. tag_images        tag with full registry path
 #   4. run_pre_orch      k3s + openebs + metallb + namespaces + secrets
 #   5. load_images_k3s   load into k3s containerd
-#   6. run_post_orch     helmfile sync with NEXUS_REPLACEMENT=true
+#   6. run_post_orch     helmfile sync (tenancy v2 always on)
 #   7. run_mt_setup      org/project/users via orch-cli + Keycloak
 #   8. verify_helmfile   releases, image tags, tenancy wiring, pod health
 #
@@ -341,13 +341,12 @@ run_pre_orch() {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Step 5: post-orch with NEXUS_REPLACEMENT enabled
+# Step 5: post-orch with tenancy v2 (always on)
 # ──────────────────────────────────────────────────────────────────────────────
 run_post_orch() {
-    step "Running post-orch-deploy.sh install (NEXUS_REPLACEMENT=true)"
+    step "Running post-orch-deploy.sh install (tenancy v2; TENANCY_V2_TAG=${CUSTOM_TAG})"
 
-    export NEXUS_REPLACEMENT="true"
-    export NEXUS_REPLACEMENT_TAG="${CUSTOM_TAG}"
+    export TENANCY_V2_TAG="${CUSTOM_TAG}"
     export ORCH_UTILS_PATH
 
     load_images_k3s
@@ -743,13 +742,13 @@ Usage: $0 {all|repos|build|tag|load|pre|deploy|setup|verify|uninstall}
 
 Steps:
   all        Full workflow: repos → build → tag → pre-orch → post-orch
-             (NEXUS_REPLACEMENT=true) → MT setup → verify
+             (tenancy v2 charts) → MT setup → verify
   repos      Clone repos and switch to *_nexus_replacement branches
   build      Build the 5 EIM custom Docker images + orch-cli
   tag        Tag images with full registry paths
   load       Load images into k3s containerd
   pre        Run pre-orch.sh install
-  deploy     Run post-orch-deploy.sh install with NEXUS_REPLACEMENT=true
+  deploy     Run post-orch-deploy.sh install (tenancy v2 always on)
              (auto-loads images first)
   setup      Create default org/project/users via orch-cli + Keycloak Admin API
   verify     Verify helm releases, image tags, tenancy wiring, pod health

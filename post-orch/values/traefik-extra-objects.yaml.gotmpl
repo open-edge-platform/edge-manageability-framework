@@ -24,13 +24,9 @@ clusterOrchNodeMatchHost: Host(`cluster-orch-node.{{ .Values.clusterDomain }}`)
 logsNodeMatchHost: Host(`logs-node.{{ .Values.clusterDomain }}`)
 metricsNodeMatchHost: Host(`metrics-node.{{ .Values.clusterDomain }}`)
 giteaMatchHost: Host(`gitea.{{ .Values.clusterDomain }}`)
-{{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
-# Nexus replacement: enable the api.* host route + tenancy-manager IngressRoutes
-# rendered by orch-utils@utils_nexus_replacement charts/traefik-extra-objects.
+# Tenancy v2: enable the api.* host route. The tenancy-v2 IngressRoutes
+# (project-prefix stripping) are always rendered by the chart.
 apiMatchHost: Host(`api.{{ .Values.clusterDomain }}`)
-nexusReplacement:
-  enabled: true
-{{- end }}
 
 # CSP connect-src for UI
 connectCSPs:

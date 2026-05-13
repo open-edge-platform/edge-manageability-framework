@@ -65,10 +65,8 @@ apiv2:
     pullPolicy: IfNotPresent
   serviceArgsProxy:
     enableAuth: true
-    {{- if eq (env "NEXUS_REPLACEMENT" | default "") "true" }}
-    # Nexus replacement: project resolution goes through tenancy-manager REST API
+    # Tenancy v2: project resolution goes through tenancy-manager REST API
     nexusAPIURL: "http://tenancy-manager.orch-iam.svc:8080"
-    {{- end }}
     traceURL: >-
       orchestrator-observability-opentelemetry-collector.orch-platform.svc:4318
   serviceArgsGrpc:
@@ -108,9 +106,9 @@ inventory:
     name: "orch-svc"
 
 tenant-controller:
-  {{- if env "NEXUS_REPLACEMENT_TAG" }}
+  {{- if env "TENANCY_V2_TAG" }}
   image:
-    tag: "{{ env "NEXUS_REPLACEMENT_TAG" }}"
+    tag: "{{ env "TENANCY_V2_TAG" }}"
   {{- end }}
   managerArgs:
     inventoryAddress: "inventory.orch-infra.svc.cluster.local:50051"
