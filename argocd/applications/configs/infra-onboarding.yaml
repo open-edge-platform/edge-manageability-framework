@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -33,7 +33,7 @@ onboarding-manager:
   # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
   traefikApiGroup: "traefik.io/v1alpha1"
   env:
-    tinkerActionsVersion: "1.20.2"
+    tinkerActionsVersion: "1.21.1"
     oidc:
       oidc_server_url: "http://platform-keycloak.orch-platform.svc/realms/master"
       # Skip AuthZ for CDN-boots
@@ -61,4 +61,4 @@ dkam:
 infra-config:
   config:
     enAgentManifestTag: "1.6.6"
-    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20251113.tar.gz
+    embImageUrl: files-edge-orch/repository/microvisor/uos/emb_uos_x86_64_20260507.tar.gz
