@@ -623,6 +623,18 @@ case "$ACTION" in
       helmfile_sync_chart "$CHART_NAME"
     else
       helmfile_sync_all
+      # Extract and install the orchestrator CA certificate for system trust
+      echo ""
+      echo "🔐 Installing orch CA certificate to system trust store..."
+      if kubectl get secret -n orch-gateway tls-orch &>/dev/null; then
+        kubectl get secret -n orch-gateway tls-orch -o jsonpath="{.data.tls\.crt}" \
+          | base64 -d > "$SCRIPT_DIR/orch-ca.crt"
+        sudo cp -rf "$SCRIPT_DIR/orch-ca.crt" /usr/local/share/ca-certificates/
+        sudo update-ca-certificates -f
+        echo "✅ orch-ca.crt installed and CA certificates updated"
+      else
+        echo "⚠️  Secret tls-orch not found in orch-gateway — skipping CA install"
+      fi
     fi
     ;;
   uninstall)
@@ -671,4 +683,3 @@ echo "  Start: $SCRIPT_START_TS"
 echo "  End:   $SCRIPT_END_TS"
 echo "  Total: $(( SCRIPT_TOTAL / 60 ))m $(( SCRIPT_TOTAL % 60 ))s"
 echo "═══════════════════════════════════════════════════════════════"
-
