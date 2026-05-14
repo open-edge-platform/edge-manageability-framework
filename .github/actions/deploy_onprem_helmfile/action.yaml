@@ -65,15 +65,15 @@ runs:
         echo "Updating pre-orch.env and post-orch.env with EMF_ORCH_IP=$HOST_IP, EMF_HELMFILE_ENV=$ORCH_PROFILE"
 
         # pre-orch.env: uncomment and set EMF_ORCH_IP, comment out individual IPs
-        sed -i "s|^#EMF_ORCH_IP=.*|EMF_ORCH_IP=$HOST_IP|" helmfile-deploy/pre-orch/pre-orch.env
-        sed -i "s|^EMF_TRAEFIK_IP=|#EMF_TRAEFIK_IP=|" helmfile-deploy/pre-orch/pre-orch.env
-        sed -i "s|^EMF_HAPROXY_IP=|#EMF_HAPROXY_IP=|" helmfile-deploy/pre-orch/pre-orch.env
+        sed -i "s|^#EMF_ORCH_IP=.*|EMF_ORCH_IP=$HOST_IP|" pre-orch/pre-orch.env
+        sed -i "s|^EMF_TRAEFIK_IP=|#EMF_TRAEFIK_IP=|" pre-orch/pre-orch.env
+        sed -i "s|^EMF_HAPROXY_IP=|#EMF_HAPROXY_IP=|" pre-orch/pre-orch.env
 
         # post-orch.env: uncomment and set EMF_ORCH_IP, comment out individual IPs, set profile
-        sed -i "s|^#EMF_ORCH_IP=.*|EMF_ORCH_IP=$HOST_IP|" helmfile-deploy/post-orch/post-orch.env
-        sed -i "s|^EMF_TRAEFIK_IP=|#EMF_TRAEFIK_IP=|" helmfile-deploy/post-orch/post-orch.env
-        sed -i "s|^EMF_HAPROXY_IP=|#EMF_HAPROXY_IP=|" helmfile-deploy/post-orch/post-orch.env
-        sed -i "s|^EMF_HELMFILE_ENV=.*|EMF_HELMFILE_ENV=$ORCH_PROFILE|" helmfile-deploy/post-orch/post-orch.env
+        sed -i "s|^#EMF_ORCH_IP=.*|EMF_ORCH_IP=$HOST_IP|" post-orch/post-orch.env
+        sed -i "s|^EMF_TRAEFIK_IP=|#EMF_TRAEFIK_IP=|" post-orch/post-orch.env
+        sed -i "s|^EMF_HAPROXY_IP=|#EMF_HAPROXY_IP=|" post-orch/post-orch.env
+        sed -i "s|^EMF_HELMFILE_ENV=.*|EMF_HELMFILE_ENV=$ORCH_PROFILE|" post-orch/post-orch.env
 
         echo "✅ Both env files updated"
 
@@ -81,7 +81,7 @@ runs:
 
     - name: Run pre-orch deploy
       shell: bash
-      working-directory: helmfile-deploy/pre-orch
+      working-directory: pre-orch
       env:
         DOCKER_USERNAME: ${{ inputs.docker_username }}
         DOCKER_PASSWORD: ${{ inputs.docker_password }}
@@ -105,7 +105,7 @@ runs:
 
     - name: Run post-orch deploy
       shell: bash
-      working-directory: helmfile-deploy/post-orch
+      working-directory: post-orch
       env:
         EMF_HELMFILE_ENV: ${{ inputs.orch_profile }}
       run: |
@@ -115,7 +115,7 @@ runs:
 
     - name: Verify post-orch deployment
       shell: bash
-      working-directory: helmfile-deploy/post-orch
+      working-directory: post-orch
       run: |
         echo "Verifying post-orch deployment..."
         chmod +x watch-deploy.sh
