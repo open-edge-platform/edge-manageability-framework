@@ -8,7 +8,6 @@
 #   source ./vault_unseal.sh
 #   vault_unseal
 
-
 # Function to delete Vault pod and unseal it when it comes back
 vault_unseal() {
   local namespace="orch-platform"
@@ -29,7 +28,7 @@ vault_unseal() {
       echo "Pod '$pod_name' not found yet. Waiting $interval seconds..."
       sleep $interval
       waited=$((waited + interval))
-      if (( waited >= max_wait )); then
+      if ((waited >= max_wait)); then
         echo "Timed out waiting for pod '$pod_name' to appear after $max_wait seconds."
         return 1
       fi
@@ -44,7 +43,7 @@ vault_unseal() {
       echo "Pod '$pod_name' status: $status. Waiting $interval seconds..."
       sleep $interval
       waited=$((waited + interval))
-      if (( waited >= max_wait )); then
+      if ((waited >= max_wait)); then
         echo "Timed out waiting for pod '$pod_name' to be Running after $max_wait seconds."
         return 1
       fi

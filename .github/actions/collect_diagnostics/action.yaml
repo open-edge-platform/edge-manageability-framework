@@ -1,12 +1,10 @@
 # SPDX-FileCopyrightText: (C) 2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
-
 inputs:
   k8s_diagnostics_args:
     description: "Arguments to pass to orch_k8s_diagnostics.py (e.g., '--errors-only --output-html --output-json')"
     required: false
     default: "--errors-only --output-html --output-json"
-
 runs:
   using: "composite"
   steps:
