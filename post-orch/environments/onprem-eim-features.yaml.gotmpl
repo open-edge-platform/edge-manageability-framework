@@ -109,8 +109,6 @@ tenancy-manager:
   # it to the org admin / project edge groups).
   bootstrapTenantAdmin:
     enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
-nexus-api-gw:
-  enabled: true
 keycloak-tenant-controller:
   enabled: true
 

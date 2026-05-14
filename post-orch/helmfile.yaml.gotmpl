@@ -688,27 +688,6 @@ releases:
 
 
   #############################################################################
-  # Wave 1220 — Nexus API GW (needs all of Wave 1210)
-  #############################################################################
-
-  - name: nexus-api-gw
-    labels:
-      app: nexus-api-gw
-      wave: "1220"
-    namespace: orch-iam
-    chart: {{ requiredEnv "ORCH_UTILS_PATH" }}/charts/nexus-api-gw
-    # chart: edge-orch/common/charts/nexus-api-gw
-    # version: 26.1.0
-    wait: true
-    values:
-      - values/nexus-api-gw.yaml.gotmpl
-      - values/resource-overrides.yaml
-    condition: nexus-api-gw.enabled
-    needs:
-      - orch-iam/tenancy-manager
-
-
-  #############################################################################
   # Wave 1250 — Keycloak tenant controller (needs all of Wave 1220)
   #############################################################################
 
@@ -726,7 +705,7 @@ releases:
       - values/resource-overrides.yaml
     condition: keycloak-tenant-controller.enabled
     needs:
-      - orch-iam/nexus-api-gw
+      - orch-iam/tenancy-manager
 
 
   #############################################################################
@@ -865,9 +844,10 @@ releases:
       app: auth-service
       wave: "2005"
     namespace: orch-gateway
-    chart: edge-orch/common/charts/auth-service
+    chart: {{ requiredEnv "ORCH_UTILS_PATH" }}/charts/auth-service
+    # chart: edge-orch/common/charts/auth-service
+    # version: 26.1.0
     wait: true
-    version: 26.1.0
     values:
       - values/auth-service.yaml.gotmpl
       - values/resource-overrides.yaml

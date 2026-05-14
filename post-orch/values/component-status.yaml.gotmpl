@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,7 +17,6 @@ imagePullSecrets:
 resources: null
 
 # Traefik IngressRoute configuration
-# Priority must be > 30 to override nexus-api-gw's generic /v route (priority 30)
 traefikRoute:
   enabled: true
   matchHost: "Host(`api.{{ .Values.clusterDomain }}`)"

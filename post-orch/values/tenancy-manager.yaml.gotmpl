@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,19 +14,12 @@ resources: null
 
 # ─── IngressRoute on websecure with Host + TLS + priority ─────────────────────
 # Default chart values land on `entryPoints: [web]` with no Host match, which
-# is unreachable externally (all external API traffic uses websecure). Without
-# this override, https://api.<domain>/v1/(orgs|projects) falls through to
-# nexus-api-gw's catch-all (priority 30) which cannot resolve projects in
-# nexus-replacement mode (no Nexus CRDs) and returns 400 "Unable to determine
-# the organizations".
-#
-# IMPORTANT: The regex must match ONLY the tenancy-manager's own routes:
+# is unreachable externally (all external API traffic uses websecure). This
+# IngressRoute serves the tenancy-manager's own routes only:
 #   /v1/orgs, /v1/orgs/{name}, /v1/orgs/{name}/status
 #   /v1/projects, /v1/projects/{name}, /v1/projects/{name}/status
-# Project-scoped paths like "/v1/projects/{name}/compute/*" must fall through
-# to nexus-api-gw which proxies to the appropriate backend service.
-#
-# Tenancy v2 mode is always on; the legacy Nexus-CRD path is removed.
+# Project-scoped paths like "/v1/projects/{name}/compute/*" are handled by
+# the per-service IngressRoutes (apiv2-proxy, cluster-manager, mps, rps, ...).
 ingress:
   enabled: true
   entryPoints:
