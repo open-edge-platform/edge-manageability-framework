@@ -15,7 +15,12 @@
 
 # ─── Platform ────────────────────────────────────────────────────────────────
 auth-service:
-  enabled: true
+  # Disabled: the only HTTP consumer that still requires the auth-service
+  # ForwardAuth chain (resolve-project-id) is alerting-monitor, which is not
+  # deployed in the EIM profile. metadata-broker self-resolves the project
+  # via orch-library projectcontext.InjectActiveProjectID, so the
+  # resolve-project-id middleware is no longer needed in front of it.
+  enabled: false
 cert-manager:
   enabled: true
 certificate-file-server:

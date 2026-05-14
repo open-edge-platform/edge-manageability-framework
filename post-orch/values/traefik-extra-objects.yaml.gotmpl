@@ -74,3 +74,27 @@ cors:
 
 # https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
 traefikApiGroup: "traefik.io/v1alpha1"
+
+# Per-route toggles. Driven by the same enabled flags used to install (or skip)
+# the upstream component releases. An IngressRoute is only rendered when the
+# component it targets is actually deployed by the active profile.
+routes:
+  harbor:
+    enabled: {{ .Values | get "harbor.enabled" false }}
+  gitea:
+    enabled: {{ .Values | get "gitea.enabled" false }}
+  fleet:
+    enabled: {{ .Values | get "fleet.enabled" false }}
+  observability:
+    # edgenode-observability + orchestrator-observability + alerting-monitor
+    # share the same observability stack; route is rendered if any of them is on.
+    enabled: {{ or (.Values | get "edgenode-observability.enabled" false) (.Values | get "orchestrator-observability.enabled" false) }}
+  amt:
+    # mps and rps share the AMT route family; either one being deployed enables it.
+    enabled: {{ or (.Values | get "infra-external.amt.mps.enabled" false) (.Values | get "infra-external.amt.rps.enabled" false) }}
+  metadataBroker:
+    enabled: {{ .Values | get "metadata-broker.enabled" false }}
+  clusterManager:
+    enabled: {{ .Values | get "cluster-manager.enabled" false }}
+  alertingMonitor:
+    enabled: {{ .Values | get "alerting-monitor.enabled" false }}
