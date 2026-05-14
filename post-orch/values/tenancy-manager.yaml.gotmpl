@@ -70,6 +70,14 @@ tenancyManager:
   defaultOrgName:     ""
   defaultProjectName: ""
   {{- end }}
+  # Tenant-admin bootstrap (Keycloak user `tenant-admin` + group membership
+  # for the default org/project). Driven by the same EMF_DEFAULT_TENANCY
+  # gate as the org/project bootstrap above. The chart will inject the
+  # required env vars and namespace-scoped Role/RoleBinding for reading the
+  # platform-keycloak admin secret and writing the tenant-admin-password
+  # secret.
+  bootstrapTenantAdmin:
+    enabled: {{ .Values | get "tenancy-manager.bootstrapTenantAdmin.enabled" false }}
   controllers:
     org:
       - keycloak-tenant-controller

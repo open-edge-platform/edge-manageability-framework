@@ -103,6 +103,12 @@ tenancy-manager:
     enabled:     {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
     orgName:     "default"
     projectName: "default"
+  # Same gate also enables the tenant-admin Keycloak user + group bootstrap
+  # (ports the remaining functionality of the legacy tenancy-init Job:
+  # creates `tenant-admin` user, stores its password in a Secret, and adds
+  # it to the org admin / project edge groups).
+  bootstrapTenantAdmin:
+    enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
 nexus-api-gw:
   enabled: true
 keycloak-tenant-controller:
