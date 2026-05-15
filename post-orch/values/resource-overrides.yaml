@@ -143,7 +143,7 @@ attestationstatus-manager:
       cpu: "64"
       memory: "64Gi"
 
-# ── orchestrator-observability subcharts ─────────────────────────────────────
+# ── Observability subcharts ──────────────────────────────────────────────────
 grafana:
   resources:
     requests:
@@ -160,8 +160,7 @@ grafana:
       limits:
         cpu: "64"
         memory: "64Gi"
-loki:
-  backend:
+  grafana_proxy:
     resources:
       requests:
         cpu: "1m"
@@ -169,6 +168,7 @@ loki:
       limits:
         cpu: "64"
         memory: "64Gi"
+loki:
   write:
     resources:
       requests:
@@ -193,6 +193,22 @@ loki:
       limits:
         cpu: "64"
         memory: "64Gi"
+  backend:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  memcachedExporter:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
   chunksCache:
     resources:
       requests:
@@ -209,7 +225,7 @@ loki:
       limits:
         cpu: "64"
         memory: "64Gi"
-  minio:
+  sidecar:
     resources:
       requests:
         cpu: "1m"
@@ -218,14 +234,13 @@ loki:
         cpu: "64"
         memory: "64Gi"
 mimir-distributed:
-  minio:
-    resources:
-      requests:
-        cpu: "1m"
-        memory: "1Mi"
-      limits:
-        cpu: "64"
-        memory: "64Gi"
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
   distributor:
     resources:
       requests:
@@ -234,7 +249,23 @@ mimir-distributed:
       limits:
         cpu: "64"
         memory: "64Gi"
+  store_gateway:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
   ingester:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
+  compactor:
     resources:
       requests:
         cpu: "1m"
@@ -258,7 +289,7 @@ mimir-distributed:
       limits:
         cpu: "64"
         memory: "64Gi"
-  compactor:
+  ruler:
     resources:
       requests:
         cpu: "1m"
@@ -266,7 +297,7 @@ mimir-distributed:
       limits:
         cpu: "64"
         memory: "64Gi"
-  store_gateway:
+  minio:
     resources:
       requests:
         cpu: "1m"

@@ -1,0 +1,121 @@
+# SPDX-FileCopyrightText: 2026 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+initialRules:
+  hostAggregationWindowSeconds: 240
+
+openPolicyAgent:
+  image:
+    tag: 1.10.1-static
+  config:
+    profile: "compressed"
+
+{{- if eq (.Values.istio.enabled | toString) "true" }}
+istio-proxy:
+  securityContext:
+    readOnlyRootFilesystem: true
+{{- end }}
+
+# https://doc.traefik.io/traefik/migrate/v2-to-v3-details/#kubernetes-crds-api-group-traefikcontainous
+traefikApiGroup: "traefik.io/v1alpha1"
+
+alertmanager:
+  configmapReload:
+    image:
+      tag: v0.89.0
+
+{{- $am := index .Values "alerting-monitor" | default dict }}
+{{- if hasKey $am "minReplicas" }}
+minReplicas: {{ $am.minReplicas }}
+{{- else }}
+minReplicas: 2
+{{- end }}
+
+{{- if hasKey $am "maxReplicas" }}
+maxReplicas: {{ $am.maxReplicas }}
+{{- else }}
+maxReplicas: 5
+{{- end }}
+
+image:
+  registry: {{ .Values.containerRegistryURL }}
+management:
+  registry: {{ .Values.containerRegistryURL }}
+
+{{- if .Values.imagePullSecrets }}
+imagePullSecrets:
+  {{- toYaml . | nindent 2 }}
+{{- else }}
+imagePullSecrets: []
+{{- end }}
+
+caSecretName: gateway-ca-cert
+{{- if hasKey $am "caSecretKey" }}
+caSecretKey: {{ $am.caSecretKey }}
+{{- else }}
+caSecretKey: ca.crt
+{{- end }}
+
+{{- if hasKey $am "smtp" }}
+smtp:
+  {{- if hasKey $am.smtp "initialize" }}
+  initialize: {{ $am.smtp.initialize }}
+  {{- end }}
+  {{- if hasKey $am.smtp "configSecret" }}
+  configSecret: {{ $am.smtp.configSecret }}
+  {{- end }}
+  userPasswordAuth: {{ dig "smtp" "userPasswordAuth" false $am }}
+  {{- if hasKey $am.smtp "userPasswordAuth" }}
+  {{- if eq ($am.smtp.userPasswordAuth | toString) "true" }}
+  passwordSecret:
+    name: {{ $am.smtp.passwordSecret.name }}
+    key: {{ $am.smtp.passwordSecret.key }}
+  {{- end }}
+  {{- end }}
+  requireTls: {{ dig "smtp" "requireTls" false $am }}
+  {{- if hasKey $am.smtp "requireTls" }}
+  {{- if eq ($am.smtp.requireTls | toString) "true" }}
+  insecureSkipVerify: {{ dig "smtp" "insecureSkipVerify" false $am }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if hasKey $am "initialRules" }}
+initialRules:
+  hostRules: {{ $am.initialRules.hostRules }}
+  appDeploymentRules: {{ $am.initialRules.appDeploymentRules }}
+  clusterRules: {{ $am.initialRules.clusterRules }}
+{{- end }}
+
+authentication:
+  oidcServer: https://keycloak.{{ .Values.clusterDomain }}:443
+  oidcServerRealm: master
+webUIAddress: "https://web-ui.{{ .Values.clusterDomain }}"
+observabilityUIAddress: "https://observability-ui.{{ .Values.clusterDomain }}"
+
+traefik:
+  matchRoute: Host(`alerting-monitor.{{ .Values.clusterDomain }}`)
+{{- $tr := index .Values "traefik" | default dict }}
+{{- if eq ($tr.enabled | toString) "true" }}
+  tlsOption: {{ $tr.tlsOption | default "" | quote }}
+{{- end }}
+
+database:
+  databaseSecret: alerting-{{ .Values.database.type }}-postgresql
+  ssl: {{ .Values.database.ssl }}
+
+{{- if hasKey $am "commonConfig" }}
+alertmanager:
+  replicaCount: {{ $am.replicas | default 2 }}
+{{- if hasKey $am.commonConfig "storageClass" }}
+  persistence:
+    storageClass: {{ $am.commonConfig.storageClass }}
+{{- end }}
+{{- end }}
+
+{{- if hasKey $am "config" }}
+alertManagerConfig:
+  groupInterval: {{ $am.config.groupInterval }}
+{{- end }}

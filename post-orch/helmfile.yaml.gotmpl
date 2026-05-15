@@ -65,6 +65,8 @@ repositories:
 {{- end }}
   - name: stakater
     url: https://stakater.github.io/stakater-charts
+  - name: prometheus
+    url: https://prometheus-community.github.io/helm-charts
   - name: cnpg
     oci: true
     url: ghcr.io/cloudnative-pg/charts
@@ -207,6 +209,19 @@ releases:
     values:
       - values/kyverno.yaml
     condition: kyverno.enabled
+    needs:
+      - ns-label/namespace-label
+
+
+  - name: prometheus-crd
+    labels:
+      app: promtheus-crd
+      wave: "100"
+    namespace: orch-platform
+    chart: prometheus/prometheus-operator-crds
+    wait: true
+    version: 24.0.1
+    condition: observability-crds.enabled
     needs:
       - ns-label/namespace-label
 
@@ -541,7 +556,7 @@ releases:
 
 
   #############################################################################
-  # Wave 1000 — Traefik pre-config (needs all of Wave 180)
+  # Wave 1000 — Traefik pre-config + Observability (needs all of Wave 180)
   #############################################################################
 
   - name: traefik-pre
@@ -559,6 +574,86 @@ releases:
       - cattle-system/copy-ca-cert-gateway-to-cattle
       - orch-infra/copy-ca-cert-gateway-to-infra
       - orch-infra/copy-keycloak-admin-to-infra
+
+
+  - name: edgenode-observability
+    labels:
+      app: edgenode-observability
+      wave: "1000"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/edgenode-observability
+    wait: true
+    version: 0.10.25
+    values:
+      - values/edgenode-observability.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: edgenode-observability.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/prometheus-crd
+
+
+  - name: edgenode-dashboards
+    labels:
+      app: edgenode-dashboards
+      wave: "1000"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/edgenode-dashboards
+    wait: true
+    version: 0.3.10
+    condition: edgenode-dashboards.enabled
+    needs:
+      - orch-infra/edgenode-observability
+
+
+  - name: orchestrator-observability
+    labels:
+      app: orchestrator-observability
+      wave: "1000"
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/orchestrator-observability
+    wait: true
+    version: 0.5.21
+    values:
+      - values/orchestrator-observability.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: orchestrator-observability.enabled
+    needs:
+      - cattle-system/copy-ca-cert-gateway-to-cattle
+      - orch-infra/copy-ca-cert-gateway-to-infra
+      - orch-infra/copy-keycloak-admin-to-infra
+      - orch-platform/prometheus-crd
+
+
+  - name: orchestrator-dashboards
+    labels:
+      app: orchestrator-dashboards
+      wave: "1000"
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/orchestrator-dashboards
+    wait: true
+    version: 0.3.2
+    condition: orchestrator-dashboards.enabled
+    needs:
+      - orch-platform/orchestrator-observability
+
+
+  - name: orchestrator-prometheus-agent
+    labels:
+      app: orchestrator-prometheus-agent
+      wave: "1000"
+    namespace: orch-platform
+    chart: prometheus/kube-prometheus-stack
+    wait: true
+    version: 79.7.1
+    values:
+      - values/orchestrator-prometheus-agent.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: orchestrator-prometheus-agent.enabled
+    needs:
+      - orch-platform/orchestrator-observability
 
 
   #############################################################################
@@ -847,6 +942,26 @@ releases:
 
 
   #############################################################################
+  # Wave 1900 — alerting-monitor (needs all of Wave 1400)
+  #############################################################################
+
+  - name: alerting-monitor
+    labels:
+      app: alerting-monitor
+      wave: "1900"
+    namespace: orch-infra
+    chart: edge-orch/o11y/charts/alerting-monitor
+    wait: true
+    version: 1.7.10
+    values:
+      - values/alerting-monitor.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: alerting-monitor.enabled
+    needs:
+      - orch-infra/edgenode-observability
+
+
+  #############################################################################
   # Wave 2000 — Core services (needs all of Wave 1400)
   #############################################################################
 
@@ -900,7 +1015,7 @@ releases:
 
 
   #############################################################################
-  # Wave 2005 — Auth service (needs all of Wave 2000)
+  # Wave 2005 — Auth service + o11y tenant controller (needs all of Wave 2000)
   #############################################################################
 
   - name: auth-service
@@ -919,6 +1034,23 @@ releases:
       - orch-platform/component-status
       - orch-infra/infra-core
       - orch-ui/metadata-broker
+
+
+  - name: observability-tenant-controller
+    labels:
+      app: observability-tenant-controller
+      wave: "2005"
+    namespace: orch-platform
+    chart: edge-orch/o11y/charts/observability-tenant-controller
+    wait: true
+    version: 0.7.4
+    values:
+      - values/observability-tenant-controller.yaml.gotmpl
+      - values/resource-overrides.yaml
+    condition: observability-tenant-controller.enabled
+    needs:
+      - orch-infra/edgenode-observability
+      - orch-infra/alerting-monitor
 
 
   #############################################################################

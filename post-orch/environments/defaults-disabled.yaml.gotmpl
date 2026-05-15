@@ -40,15 +40,23 @@ cluster-manager:
 
 intel-infra-provider:
   enabled: false
+observability-crds:
+  enabled: false
 orchestrator-observability:
   enabled: false
 orchestrator-dashboards:
+  enabled: false
+orchestrator-prometheus-agent:
   enabled: false
 alerting-monitor:
   enabled: false
 edgenode-observability:
   enabled: false
 edgenode-dashboards:
+  enabled: false
+observability-tenant-controller:
+  enabled: false # only enable if alerting-monitor and edgenode-observability enabled
+tempo:
   enabled: false
 web-ui-app-orch:
   enabled: false
