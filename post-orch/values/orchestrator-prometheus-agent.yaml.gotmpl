@@ -16,6 +16,24 @@ prometheusOperator:
   alertmanagerInstanceNamespaces: ["orch-platform"]
   alertmanagerConfigNamespaces: ["orch-platform"]
   prometheusInstanceNamespaces: ["orch-platform"]
+  # set resources here as there is no option to differentiate between
+  # this prometheusOperator and other operators on the cluster if
+  # resource settings are added to the resource-overrides.yaml
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"
 kubeletService:
   enabled: false
 nodeExporter:
@@ -30,6 +48,16 @@ kube-state-metrics:
   prometheus:
     monitor:
       enabled: true
+  # set resources here as there is no option to differentiate between
+  # this prometheusOperator and other operators on the cluster if
+  # resource settings are added to the resource-overrides.yaml
+  resources:
+    requests:
+      cpu: "1m"
+      memory: "1Mi"
+    limits:
+      cpu: "64"
+      memory: "64Gi"
 grafana:
   enabled: false
 kubeProxy:
@@ -74,3 +102,13 @@ prometheus:
         url: "http://orchestrator-observability-mimir-gateway:8181/api/v1/push"
         headers:
           "X-Scope-OrgID": "orchestrator-system"
+    # set resources here as there is no option to differentiate between
+    # this prometheusOperator and other operators on the cluster if
+    # resource settings are added to the resource-overrides.yaml
+    resources:
+      requests:
+        cpu: "1m"
+        memory: "1Mi"
+      limits:
+        cpu: "64"
+        memory: "64Gi"

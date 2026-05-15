@@ -34,6 +34,22 @@ loki:
       tag: RELEASE.2025-09-07T16-13-09Z
     mcImage:
       tag: RELEASE.2025-08-13T08-35-41Z
+  backend:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: null
+  read:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: null
+  write:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: null
+  gateway:
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution: null
 
 mimir-distributed:
   minio:
@@ -89,7 +105,7 @@ opentelemetry-collector:
             include_metadata: true
     processors:
       # Used for Tempo to sample 50% of traces, based on TraceID
-      probablistic_sampler:
+      probabilistic_sampler:
         sampling_percentage: 50
     service:
       telemetry:
@@ -122,18 +138,18 @@ opentelemetry-collector-daemonset:
               static_configs:
                 - targets:
                     - ${env:MY_POD_IP}:8888
-      service:
-        telemetry:
-          metrics:
-            level: detailed
-            readers:
-              - pull:
-                  exporter:
-                    prometheus:
-                      host: ${env:MY_POD_IP}
-                      port: 8888
-                      without_type_suffix: true
-                      without_units: true
+    service:
+      telemetry:
+        metrics:
+          level: detailed
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: ${env:MY_POD_IP}
+                    port: 8888
+                    without_type_suffix: true
+                    without_units: true
 
 import:
   tempo:
