@@ -26,8 +26,8 @@ if [[ -n "$vault_running" ]]; then
   # (same approach as vault_unseal.sh uses to verify vault state)
   vault_status=$(kubectl exec -n "$NS" "$vault_pod" -c vault -- \
     vault status -format=json 2>/dev/null || true)
-  if echo "$vault_status" | grep -q '"initialized": true' && \
-     echo "$vault_status" | grep -q '"sealed": false'; then
+  if echo "$vault_status" | grep -q '"initialized": true' \
+    && echo "$vault_status" | grep -q '"sealed": false'; then
     vault_initialized=true
   fi
   # Also verify vault-keys secret has valid unseal keys

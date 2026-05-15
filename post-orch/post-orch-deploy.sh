@@ -23,9 +23,9 @@ VALID_PROFILES="onprem-eim onprem-vpro"
 is_valid_ip() {
   local ip=$1
   if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-    IFS='.' read -r -a octets <<< "$ip"
+    IFS='.' read -r -a octets <<<"$ip"
     for octet in "${octets[@]}"; do
-      if (( octet < 0 || octet > 255 )); then
+      if ((octet < 0 || octet > 255)); then
         return 1
       fi
     done
@@ -86,7 +86,7 @@ validate_config() {
   if [[ -n "${EMF_HTTP_PROXY:-}" && -z "${EMF_NO_PROXY:-}" ]]; then
     echo "⚠️  EMF_HTTP_PROXY is set but EMF_NO_PROXY is empty — cluster services may be proxied"
   fi
-  if (( errors > 0 )); then
+  if ((errors > 0)); then
     echo "❌ Validation failed with $errors error(s). Aborting."
     exit 1
   fi
@@ -163,7 +163,7 @@ helmfile_sync_all() {
         while IFS=' ' read -r job_ns job; do
           echo "  🧹 Deleting stale Job $job in $job_ns"
           kubectl delete job "$job" -n "$job_ns" --ignore-not-found 2>/dev/null || true
-        done <<< "$job_list"
+        done <<<"$job_list"
       fi
       # Fix releases stuck in "failed" or "pending-*" state
       if [[ "$status" != "deployed" && -n "$status" ]]; then
@@ -187,7 +187,7 @@ helmfile_sync_all() {
           fi
         fi
       fi
-    done <<< "$installed_releases"
+    done <<<"$installed_releases"
   fi
   echo ""
   echo "🚀 Running helmfile sync (parallel deployment)..."
@@ -195,7 +195,7 @@ helmfile_sync_all() {
   local sync_exit=0
   (cd "$SCRIPT_DIR" && helmfile -e "$HELMFILE_ENV" --skip-deps sync --concurrency 4) 2>&1
   sync_exit=$?
-  local total_duration=$(( SECONDS - start_time ))
+  local total_duration=$((SECONDS - start_time))
 
   # ─── Build per-chart summary from helm list ────────────────────────────────
   local deployed_list="" failed_list="" pending_list="" notinstalled_list=""
@@ -239,15 +239,15 @@ helmfile_sync_all() {
         notinstalled_list+="  ⚪  $release"$'\n'
         ;;
     esac
-  done <<< "$enabled_releases"
+  done <<<"$enabled_releases"
 
-  local total_enabled=$(( deployed_count + failed_count + pending_count + notinstalled_count ))
+  local total_enabled=$((deployed_count + failed_count + pending_count + notinstalled_count))
 
   echo ""
   echo "═══════════════════════════════════════════════════════════════"
   echo "  DEPLOYMENT SUMMARY  (env: $HELMFILE_ENV)"
   echo "═══════════════════════════════════════════════════════════════"
-  echo "  Total time: $(( total_duration / 60 ))m $(( total_duration % 60 ))s"
+  echo "  Total time: $((total_duration / 60))m $((total_duration % 60))s"
   echo ""
   printf "  ✅ Deployed: %-4d  ❌ Failed: %-4d  ⏳ Pending: %-4d  ⚪ Not installed: %d\n" \
     "$deployed_count" "$failed_count" "$pending_count" "$notinstalled_count"
@@ -275,26 +275,26 @@ helmfile_sync_all() {
     echo ""
   fi
 
-  if (( failed_count == 0 && pending_count == 0 && notinstalled_count == 0 )); then
+  if ((failed_count == 0 && pending_count == 0 && notinstalled_count == 0)); then
     echo "  ✅ ALL $total_enabled RELEASES DEPLOYED SUCCESSFULLY"
   else
-    if (( failed_count > 0 )); then
+    if ((failed_count > 0)); then
       echo "  ❌ $failed_count chart(s) failed"
     fi
-    if (( pending_count > 0 )); then
+    if ((pending_count > 0)); then
       echo "  ⚠️  $pending_count chart(s) still pending"
     fi
-    if (( notinstalled_count > 0 )); then
+    if ((notinstalled_count > 0)); then
       echo "  ⚠️  $notinstalled_count chart(s) not installed"
     fi
-    if (( sync_exit != 0 )); then
+    if ((sync_exit != 0)); then
       echo "  ❌ helmfile sync exited with code $sync_exit"
     fi
     echo "  ❌ DEPLOYMENT FAILED"
   fi
   echo "═══════════════════════════════════════════════════════════════"
 
-  if (( failed_count > 0 || pending_count > 0 || notinstalled_count > 0 || sync_exit != 0 )); then
+  if ((failed_count > 0 || pending_count > 0 || notinstalled_count > 0 || sync_exit != 0)); then
     exit 1
   fi
 }
@@ -311,51 +311,51 @@ helmfile_destroy_all() {
   if [[ -z "$installed_map" ]]; then
     echo "ℹ️  No helm releases found — nothing to uninstall"
   else
-  # Get release names from helmfile.yaml.gotmpl in definition order, then reverse
-  local all_helmfile_releases
-  all_helmfile_releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml.gotmpl")
-  # Filter to only releases that are actually installed, in reverse wave order
-  local releases
-  releases=$(echo "$all_helmfile_releases" \
-    | while read -r name; do echo "$installed_map" | awk -v r="$name" '$1==r{print r; exit}'; done \
-    | tac)
-  if [[ -z "$releases" ]]; then
-    echo "ℹ️  No helmfile-managed releases are currently installed"
-  else
-  local total
-  total=$(echo "$releases" | wc -l)
-  local current=0
-  for release in $releases; do
-    ((current++))
-    # Find the namespace for this release from the installed map
-    local ns
-    ns=$(echo "$installed_map" | awk -v r="$release" '$1==r{print $2; exit}')
-    if [[ -z "$ns" ]]; then
-      echo "[$current/$total] ⏭️  $release — not found, skipping"
-      skipped+=("$release")
-      continue
-    fi
-    echo "[$current/$total] 🗑️  Destroying: $release (ns: $ns)"
-    if helm uninstall "$release" -n "$ns" 2>&1; then
-      echo "✅ $release uninstalled"
-      passed+=("$release")
+    # Get release names from helmfile.yaml.gotmpl in definition order, then reverse
+    local all_helmfile_releases
+    all_helmfile_releases=$(awk '/^releases:/{found=1} found && /^  - name: /{print $NF}' "$SCRIPT_DIR/helmfile.yaml.gotmpl")
+    # Filter to only releases that are actually installed, in reverse wave order
+    local releases
+    releases=$(echo "$all_helmfile_releases" \
+      | while read -r name; do echo "$installed_map" | awk -v r="$name" '$1==r{print r; exit}'; done \
+      | tac)
+    if [[ -z "$releases" ]]; then
+      echo "ℹ️  No helmfile-managed releases are currently installed"
     else
-      echo "❌ $release uninstall FAILED"
-      failed+=("$release")
-    fi
-  done
-  echo ""
-  echo "═══════════════════════════════════════════════════════════════"
-  echo "  UNINSTALL SUMMARY  (env: $HELMFILE_ENV)"
-  echo "═══════════════════════════════════════════════════════════════"
-  echo "  Removed: ${#passed[@]}  |  Failed: ${#failed[@]}  |  Skipped: ${#skipped[@]}  |  Total: $total"
-  if (( ${#failed[@]} > 0 )); then
-    echo "  Failed: $(printf '%s ' "${failed[@]}")"
-  fi
-  echo "═══════════════════════════════════════════════════════════════"
-  echo ""
-  fi # end releases loop
-  fi # end installed_map check
+      local total
+      total=$(echo "$releases" | wc -l)
+      local current=0
+      for release in $releases; do
+        ((current++))
+        # Find the namespace for this release from the installed map
+        local ns
+        ns=$(echo "$installed_map" | awk -v r="$release" '$1==r{print $2; exit}')
+        if [[ -z "$ns" ]]; then
+          echo "[$current/$total] ⏭️  $release — not found, skipping"
+          skipped+=("$release")
+          continue
+        fi
+        echo "[$current/$total] 🗑️  Destroying: $release (ns: $ns)"
+        if helm uninstall "$release" -n "$ns" 2>&1; then
+          echo "✅ $release uninstalled"
+          passed+=("$release")
+        else
+          echo "❌ $release uninstall FAILED"
+          failed+=("$release")
+        fi
+      done
+      echo ""
+      echo "═══════════════════════════════════════════════════════════════"
+      echo "  UNINSTALL SUMMARY  (env: $HELMFILE_ENV)"
+      echo "═══════════════════════════════════════════════════════════════"
+      echo "  Removed: ${#passed[@]}  |  Failed: ${#failed[@]}  |  Skipped: ${#skipped[@]}  |  Total: $total"
+      if ((${#failed[@]} > 0)); then
+        echo "  Failed: $(printf '%s ' "${failed[@]}")"
+      fi
+      echo "═══════════════════════════════════════════════════════════════"
+      echo ""
+    fi # end releases loop
+  fi   # end installed_map check
 
   # Clean up orphaned secrets created by operators/controllers (not managed by Helm)
   echo "🧹 Cleaning up orphaned secrets (operator/controller-created)..."
@@ -407,7 +407,7 @@ _upgrade_get_postgres_pod() {
 
 _upgrade_wait_postgres_ready() {
   echo "⏳ Waiting for PostgreSQL to be ready..."
-  local deadline=$(( SECONDS + 300 ))
+  local deadline=$((SECONDS + 300))
   while true; do
     local pod
     pod=$(_upgrade_get_postgres_pod)
@@ -422,7 +422,7 @@ _upgrade_wait_postgres_ready() {
         return 0
       fi
     fi
-    if (( SECONDS >= deadline )); then
+    if ((SECONDS >= deadline)); then
       echo "❌ Timed out waiting for PostgreSQL to be ready"
       kubectl get pods -n "$POSTGRES_NAMESPACE" || true
       return 1
@@ -509,9 +509,9 @@ helmfile_upgrade_all() {
   # Run in subshell so that helmfile_sync_all's exit 1 doesn't kill the upgrade flow.
   echo "🚀 Step 3: Running helmfile sync for upgrade..."
   local sync_failed=0
-  ( helmfile_sync_all ) || sync_failed=$?
+  (helmfile_sync_all) || sync_failed=$?
 
-  if (( sync_failed != 0 )); then
+  if ((sync_failed != 0)); then
     echo "⚠️  helmfile sync had failures (exit code: $sync_failed) — continuing to DB restore"
   fi
   echo ""
@@ -545,11 +545,11 @@ helmfile_upgrade_all() {
   echo "  UPGRADE COMPLETE  (env: $HELMFILE_ENV)"
   echo "═══════════════════════════════════════════════════════════════"
   echo "  Backup dir:  $UPGRADE_BACKUP_DIR"
-  echo "  Charts:      $(if (( sync_failed == 0 )); then echo "All deployed successfully"; else echo "Deployed with $sync_failed error(s) — review above"; fi)"
+  echo "  Charts:      $(if ((sync_failed == 0)); then echo "All deployed successfully"; else echo "Deployed with $sync_failed error(s) — review above"; fi)"
   echo "  PostgreSQL:  $(if [[ -f "${UPGRADE_BACKUP_DIR}/${POSTGRES_NAMESPACE}_backup.sql" ]]; then echo "Restored from backup"; else echo "No restore needed"; fi)"
   echo "═══════════════════════════════════════════════════════════════"
 
-  if (( sync_failed != 0 )); then
+  if ((sync_failed != 0)); then
     exit 1
   fi
 }
@@ -675,11 +675,11 @@ case "$ACTION" in
 esac
 # ─── Script timing summary ──────────────────────────────────────────────────
 SCRIPT_END_TS=$(date '+%Y-%m-%d %H:%M:%S')
-SCRIPT_TOTAL=$(( SECONDS - SCRIPT_START_TIME ))
+SCRIPT_TOTAL=$((SECONDS - SCRIPT_START_TIME))
 echo ""
 echo "═══════════════════════════════════════════════════════════════"
 echo "  SCRIPT TIMING"
 echo "  Start: $SCRIPT_START_TS"
 echo "  End:   $SCRIPT_END_TS"
-echo "  Total: $(( SCRIPT_TOTAL / 60 ))m $(( SCRIPT_TOTAL % 60 ))s"
+echo "  Total: $((SCRIPT_TOTAL / 60))m $((SCRIPT_TOTAL % 60))s"
 echo "═══════════════════════════════════════════════════════════════"

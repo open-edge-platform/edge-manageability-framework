@@ -5,8 +5,8 @@ set -x
 
 # Check if at least two arguments are provided
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo "Usage: $0 <cluster.fqdn> {setup|config}"
-    exit 1
+  echo "Usage: $0 <cluster.fqdn> {setup|config}"
+  exit 1
 fi
 
 CLUSTER_FQDN="$1"
@@ -17,49 +17,49 @@ interface_name=$(ip -o -4 addr show | awk '$4 ~ /^10\./ {print $2}')
 
 # Check if any interfaces were found
 if [ -n "$interface_name" ]; then
-    echo "Interfaces with IP addresses starting with 10.:"
-    echo "$interface_name"
+  echo "Interfaces with IP addresses starting with 10.:"
+  echo "$interface_name"
 else
-    echo "No interfaces found with IP addresses starting with 10."
-    ip -o -4 addr show
-    exit 1
+  echo "No interfaces found with IP addresses starting with 10."
+  ip -o -4 addr show
+  exit 1
 fi
 
 # Get the IP address of the specified interface
 ip_address=$(ip -4 addr show "$interface_name" | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 if [ -z "$ip_address" ]; then
-    echo "No IP address found for $interface_name. Exiting."
-    exit 1
+  echo "No IP address found for $interface_name. Exiting."
+  exit 1
 fi
 
 function setup_dns() {
-    sudo apt update -y
-    resolvectl status
-    dns_server_ip=$(resolvectl status | awk '/Current DNS Server/ {print $4}')
-    sudo apt install -y dnsmasq
-    sudo systemctl disable systemd-resolved
-    sudo systemctl stop systemd-resolved
+  sudo apt update -y
+  resolvectl status
+  dns_server_ip=$(resolvectl status | awk '/Current DNS Server/ {print $4}')
+  sudo apt install -y dnsmasq
+  sudo systemctl disable systemd-resolved
+  sudo systemctl stop systemd-resolved
 
-    # Backup the original dnsmasq configuration file
-    echo "Backing up the original dnsmasq configuration..."
-    sudo cp /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
+  # Backup the original dnsmasq configuration file
+  echo "Backing up the original dnsmasq configuration..."
+  sudo cp /etc/dnsmasq.conf /etc/dnsmasq.conf.bak
 
-    # Get the current hostname
-    current_hostname=$(hostname)
-    echo "Adding hostname '$current_hostname' to /etc/hosts..."
-    echo "$ip_address $current_hostname" | sudo tee -a /etc/hosts > /dev/null
+  # Get the current hostname
+  current_hostname=$(hostname)
+  echo "Adding hostname '$current_hostname' to /etc/hosts..."
+  echo "$ip_address $current_hostname" | sudo tee -a /etc/hosts >/dev/null
 
-    # Unlink and recreate /etc/resolv.conf
-    echo "Configuring /etc/resolv.conf..."
-    sudo unlink /etc/resolv.conf
-    cat <<EOL | sudo tee /etc/resolv.conf
+  # Unlink and recreate /etc/resolv.conf
+  echo "Configuring /etc/resolv.conf..."
+  sudo unlink /etc/resolv.conf
+  cat <<EOL | sudo tee /etc/resolv.conf
 nameserver 127.0.0.1
 options trust-ad
 EOL
 
-    # Configure dnsmasq
-    echo "Configuring dnsmasq..."
-    cat <<EOL | sudo tee /etc/dnsmasq.conf
+  # Configure dnsmasq
+  echo "Configuring dnsmasq..."
+  cat <<EOL | sudo tee /etc/dnsmasq.conf
 interface=$interface_name
 bind-interfaces
 log-queries
@@ -72,23 +72,23 @@ EOL
 }
 
 function update_host_lb_ip() {
-    # Get LoadBalancer IPs from Kubernetes services
-    argocd_lb=$(kubectl get svc -n argocd | grep LoadBalancer | awk '{print $4}')
-    tinkerbell_lb=$(kubectl get svc -n orch-boots | grep LoadBalancer | awk '{print $4}')
-    cluster_lb=$(kubectl get svc -n orch-gateway | grep LoadBalancer | awk '{print $4}')
-    
-    # Check if LoadBalancer IPs were found
-    if [ -z "$argocd_lb" ] || [ -z "$tinkerbell_lb" ] || [ -z "$cluster_lb" ]; then
-        echo "One or more LoadBalancer IPs could not be retrieved. Exiting."
-        exit 1
-    fi
-    
-    # Uncomment these lines if you want to use the host IP instead
-    # argocd_lb=$ip_address
-    # tinkerbell_lb=$ip_address
-    # cluster_lb=$ip_address
-    
-    cat <<EOL | sudo tee /etc/dnsmasq.d/cluster-hosts-dns.conf
+  # Get LoadBalancer IPs from Kubernetes services
+  argocd_lb=$(kubectl get svc -n argocd | grep LoadBalancer | awk '{print $4}')
+  tinkerbell_lb=$(kubectl get svc -n orch-boots | grep LoadBalancer | awk '{print $4}')
+  cluster_lb=$(kubectl get svc -n orch-gateway | grep LoadBalancer | awk '{print $4}')
+
+  # Check if LoadBalancer IPs were found
+  if [ -z "$argocd_lb" ] || [ -z "$tinkerbell_lb" ] || [ -z "$cluster_lb" ]; then
+    echo "One or more LoadBalancer IPs could not be retrieved. Exiting."
+    exit 1
+  fi
+
+  # Uncomment these lines if you want to use the host IP instead
+  # argocd_lb=$ip_address
+  # tinkerbell_lb=$ip_address
+  # cluster_lb=$ip_address
+
+  cat <<EOL | sudo tee /etc/dnsmasq.d/cluster-hosts-dns.conf
 address=/tinkerbell-haproxy.$CLUSTER_FQDN/$tinkerbell_lb
 address=/argo.$CLUSTER_FQDN/$argocd_lb
 address=/$CLUSTER_FQDN/$cluster_lb
@@ -137,21 +137,21 @@ EOL
 
 # Main execution logic
 if [ "$ACTION" == "setup" ]; then
-    setup_dns
-    # update_host_lb_ip  # Uncomment if you want to run this during setup
-    sudo systemctl restart dnsmasq
-    sudo systemctl enable dnsmasq
-    cat /etc/resolv.conf
-    cat /etc/dnsmasq.conf
+  setup_dns
+  # update_host_lb_ip  # Uncomment if you want to run this during setup
+  sudo systemctl restart dnsmasq
+  sudo systemctl enable dnsmasq
+  cat /etc/resolv.conf
+  cat /etc/dnsmasq.conf
 
 elif [ "$ACTION" == "config" ]; then
-    update_host_lb_ip
-    sudo systemctl restart dnsmasq
-    sudo systemctl enable dnsmasq
-    echo "DNS config updated"
-    sudo cat /etc/dnsmasq.d/cluster-hosts-dns.conf
+  update_host_lb_ip
+  sudo systemctl restart dnsmasq
+  sudo systemctl enable dnsmasq
+  echo "DNS config updated"
+  sudo cat /etc/dnsmasq.d/cluster-hosts-dns.conf
 else
-    echo "Invalid action: $ACTION"
-    echo "Usage: $0 <cluster.fqdn> {setup|config}"
-    exit 1
+  echo "Invalid action: $ACTION"
+  echo "Usage: $0 <cluster.fqdn> {setup|config}"
+  exit 1
 fi
