@@ -5,9 +5,6 @@
 image:
   registry: {{ .Values.containerRegistryURL }}
   repository: common/keycloak-tenant-controller
-  {{- if env "TENANCY_V2_TAG" }}
-  tag: "{{ env "TENANCY_V2_TAG" }}"
-  {{- end }}
 imagePullSecrets: []
 
 resources: null
