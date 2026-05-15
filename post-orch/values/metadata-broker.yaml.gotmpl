@@ -13,3 +13,8 @@ openidc:
 service:
   traefik:
     namespace: "orch-gateway"
+
+{{- if env "TENANCY_V2_TAG" }}
+image:
+  tag: "{{ env "TENANCY_V2_TAG" }}"
+{{- end }}

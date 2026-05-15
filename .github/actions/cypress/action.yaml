@@ -114,7 +114,6 @@ runs:
         kubectl logs -n orch-infra -l app.kubernetes.io/name=dkam --tail -1 > cypress/logs/edgeinfra/dkam.log
         kubectl logs -n orch-infra -l app.kubernetes.io/name=os-resource-manager --tail -1 > cypress/logs/edgeinfra/os-resource-manager.log
 
-        kubectl logs -n orch-iam -l app=nexus-api-gw --tail -1 > cypress/logs/edgeinfra/nexus-api-gw.log
         kubectl logs -n orch-gateway -l app.kubernetes.io/name=traefik --tail -1 > cypress/logs/edgeinfra/traefik.log
 
         kubectl -n enic logs $(kubectl -n enic get pods -l app=enic --no-headers | awk '{print $1}') -c fake-uuid > cypress/logs/edgeinfra/enic-fake-uuid.log || true

@@ -648,22 +648,6 @@ releases:
       - orch-gateway/traefik
 
 
-  - name: tenancy-datamodel
-    labels:
-      app: tenancy-datamodel
-      wave: "1200"
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-datamodel
-    wait: true
-    version: 26.1.1
-    values:
-      - values/tenancy-datamodel.yaml.gotmpl
-    condition: tenancy-datamodel.enabled
-    needs:
-      - orch-boots/ingress-haproxy
-      - orch-gateway/traefik
-
-
   - name: traefik-extra-objects
     labels:
       app: traefik-extra-objects
@@ -671,7 +655,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/traefik-extra-objects
     wait: true
-    version: 26.0.2
+    version: 26.1.1
     values:
       - values/traefik-extra-objects.yaml.gotmpl
     condition: traefik-extra-objects.enabled
@@ -681,25 +665,8 @@ releases:
 
 
   #############################################################################
-  # Wave 1210 — Tenancy API + Manager (needs all of Wave 1200)
+  # Wave 1210 — Tenancy Manager (needs all of Wave 1200)
   #############################################################################
-
-  - name: tenancy-api-mapping
-    labels:
-      app: tenancy-api-mapping
-      wave: "1210"
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-api-mapping
-    wait: true
-    version: 26.1.4
-    values:
-      - values/tenancy-api-mapping.yaml.gotmpl
-    condition: tenancy-api-mapping.enabled
-    needs:
-      - orch-boots/haproxy-ingress-pxe-boots
-      - orch-iam/tenancy-datamodel
-      - orch-gateway/traefik-extra-objects
-
 
   - name: tenancy-manager
     labels:
@@ -708,36 +675,14 @@ releases:
     namespace: orch-iam
     chart: edge-orch/common/charts/tenancy-manager
     wait: true
-    version: 26.1.2
+    version: 26.1.3
     values:
       - values/tenancy-manager.yaml.gotmpl
       - values/resource-overrides.yaml
     condition: tenancy-manager.enabled
     needs:
       - orch-boots/haproxy-ingress-pxe-boots
-      - orch-iam/tenancy-datamodel
       - orch-gateway/traefik-extra-objects
-
-
-  #############################################################################
-  # Wave 1220 — Nexus API GW (needs all of Wave 1210)
-  #############################################################################
-
-  - name: nexus-api-gw
-    labels:
-      app: nexus-api-gw
-      wave: "1220"
-    namespace: orch-iam
-    chart: edge-orch/common/charts/nexus-api-gw
-    wait: true
-    version: 26.1.2
-    values:
-      - values/nexus-api-gw.yaml.gotmpl
-      - values/resource-overrides.yaml
-    condition: nexus-api-gw.enabled
-    needs:
-      - orch-iam/tenancy-api-mapping
-      - orch-iam/tenancy-manager
 
 
   #############################################################################
@@ -751,33 +696,21 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/keycloak-tenant-controller
     wait: true
-    version: 26.1.12
+    version: 26.1.14
     values:
       - values/keycloak-tenant-controller.yaml.gotmpl
       - values/resource-overrides.yaml
     condition: keycloak-tenant-controller.enabled
     needs:
-      - orch-iam/nexus-api-gw
+      - orch-iam/tenancy-manager
 
 
   #############################################################################
-  # Wave 1300 — TLS boots wait + token-fs + tenancy-init (needs Wave 1250)
+  # Wave 1300 — TLS boots wait + token-fs
+  #
+  # Default org/project bootstrap is performed by the tenancy-manager itself
+  # (controlled by EMF_DEFAULT_TENANCY → tenancy-manager.bootstrap.enabled)
   #############################################################################
-
-  - name: tenancy-init
-    labels:
-      app: tenancy-init
-      wave: "1300"
-    namespace: orch-iam
-    chart: edge-orch/common/charts/tenancy-init
-    wait: true
-    waitForJobs: true
-    version: 26.1.1
-    values:
-      - values/tenancy-init.yaml.gotmpl
-    condition: tenancy-init.enabled
-    needs:
-      - orch-gateway/keycloak-tenant-controller
 
   - name: secret-wait-tls-boots
     labels:
@@ -890,7 +823,7 @@ releases:
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-metadata-broker
     wait: true
-    version: 1.0.1
+    version: 1.0.3
     values:
       - values/metadata-broker.yaml.gotmpl
     condition: metadata-broker.enabled
@@ -910,7 +843,7 @@ releases:
     namespace: orch-gateway
     chart: edge-orch/common/charts/auth-service
     wait: true
-    version: 26.1.10
+    version: 26.1.12
     values:
       - values/auth-service.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -1015,7 +948,7 @@ releases:
     namespace: orch-ui
     chart: edge-orch/orch-ui/charts/orch-ui-infra
     wait: true
-    version: 4.0.6
+    version: 4.0.7
     values:
       - values/web-ui-infra.yaml.gotmpl
     condition: web-ui-infra.enabled
