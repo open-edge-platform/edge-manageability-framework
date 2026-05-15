@@ -152,9 +152,9 @@ pxe:
 
 # ─── O11y replica settings ──────────────────────────────────────────────────
 alerting-monitor:
-    minReplicas: {{ env "EMF_ALERTING_MIN_REPLICAS" | default "2" }}
-    maxReplicas: {{ env "EMF_ALERTING_MAX_REPLICAS" | default "5" }}
-    replicas: {{ env "EMF_ALERTMANAGER_REPLICAS" | default "1" }}
-    smtp:
-      initialize: {{ env "EMF_SMTP_INITIALIZE" | default "false" }}
+  minReplicas: {{ env "EMF_ALERTING_MIN_REPLICAS" | default "2" }}
+  maxReplicas: {{ env "EMF_ALERTING_MAX_REPLICAS" | default "5" }}
+  replicas: {{ env "EMF_ALERTMANAGER_REPLICAS" | default "1" }}
+  smtp:
+    initialize: {{ env "EMF_SMTP_INITIALIZE" | default "false" }}
 
