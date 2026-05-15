@@ -807,7 +807,7 @@ releases:
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-core
     wait: true
-    version: 2.20.3
+    version: 2.20.4
     values:
       - values/infra-core.yaml.gotmpl
       - values/resource-overrides.yaml
@@ -880,7 +880,7 @@ releases:
     namespace: orch-infra
     chart: edge-orch/infra/charts/infra-external
     wait: true
-    version: 2.14.3
+    version: 2.14.4
     values:
       - values/infra-external.yaml.gotmpl
     condition: infra-external.enabled
