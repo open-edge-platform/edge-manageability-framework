@@ -11,7 +11,7 @@ require (
 	github.com/bitfield/script v0.24.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
-	github.com/magefile/mage v1.17.1
+	github.com/magefile/mage v1.17.2
 	github.com/moby/go-archive v0.2.0
 	github.com/moby/moby/api v1.54.2
 	github.com/moby/moby/client v0.4.1
@@ -33,7 +33,7 @@ require (
 	golang.org/x/crypto v0.50.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/grpc v1.81.0-dev
+	google.golang.org/grpc v1.81.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.35.5
 	k8s.io/client-go v0.35.4
