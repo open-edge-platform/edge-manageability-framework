@@ -21,18 +21,29 @@ runs:
 
     - name: Install Terraform
       shell: bash
+      env:
+        TERRAFORM_VERSION: "1.9.8"
       run: |
-        if ! command -v terraform &> /dev/null; then
-          echo "Installing Terraform..."
-          wget -qO- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]" \
-            "https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
-            | sudo tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq terraform
-        else
-          echo "Terraform already installed: $(terraform --version | head -1)"
+        if command -v terraform >/dev/null 2>&1; then
+          echo "Terraform already installed: $(terraform version | head -1)"
+          exit 0
         fi
+        echo "Installing Terraform ${TERRAFORM_VERSION} from releases.hashicorp.com..."
+        # Avoid the HashiCorp apt repo: it doesn't always carry a package list
+        # for newer Ubuntu codenames (e.g. 'noble'), which makes
+        # `apt-get install terraform` silently fail with 'Unable to locate package'.
+        # Pulling the static zip is codename-independent and version-pinned.
+        tmpdir="$(mktemp -d)"
+        arch="amd64"
+        case "$(uname -m)" in
+          aarch64|arm64) arch="arm64" ;;
+        esac
+        url="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${arch}.zip"
+        curl -fsSL -o "${tmpdir}/terraform.zip" "${url}"
+        unzip -q -d "${tmpdir}" "${tmpdir}/terraform.zip"
+        sudo install -m 0755 "${tmpdir}/terraform" /usr/local/bin/terraform
+        rm -rf "${tmpdir}"
+        terraform version | head -1
 
     - name: Clone virtual-edge-node repository
       shell: bash
