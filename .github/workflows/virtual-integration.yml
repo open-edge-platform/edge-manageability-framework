@@ -12,7 +12,6 @@ on:
     branches:
       - main
       - main-pass-validation
-      - EMF_HELMDEPLOY_2026_01
 
   # Trigger workflow on PRs to all branches
   pull_request:
