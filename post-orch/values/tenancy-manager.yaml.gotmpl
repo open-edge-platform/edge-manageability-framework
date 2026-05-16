@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,3 +8,82 @@ image:
 imagePullSecrets: []
 
 resources: null
+
+# ─── IngressRoute on websecure with Host + TLS + priority ─────────────────────
+# Default chart values land on `entryPoints: [web]` with no Host match, which
+# is unreachable externally (all external API traffic uses websecure). This
+# IngressRoute serves the tenancy-manager's own routes only:
+#   /v1/orgs, /v1/orgs/{name}, /v1/orgs/{name}/status
+#   /v1/projects, /v1/projects/{name}, /v1/projects/{name}/status
+# Project-scoped paths like "/v1/projects/{name}/compute/*" are handled by
+# the per-service IngressRoutes.
+ingress:
+  enabled: true
+  entryPoints:
+    - websecure
+  pathMatch: "Host(`api.{{ .Values.clusterDomain }}`) && PathRegexp(`^/v1/(orgs|projects)(/[^/]+(/status)?)?/?$`)"
+  priority: 100
+  middlewares:
+    - name: validate-jwt
+      namespace: orch-gateway
+    - name: secure-headers
+      namespace: orch-gateway
+  tls:
+    options:
+      name: gateway-tls
+      namespace: orch-gateway
+    secretName: {{ .Values.tlsSecret }}
+
+# ─── Tenancy v2: Postgres-backed tenancy-manager ─────────────────────────────
+# The new tenancy-manager stores tenancy state in
+# Postgres via Ent and exposes a REST API. These postgres credentials match the
+# secret created by post-orch/pre-orch-config.sh and the orch-iam-iam-tenancy
+# database created by postgresql-secrets.
+postgresql:
+  existingSecret: "iam-tenancy-local-postgresql"
+  existingSecretPasswordKey: "PGPASSWORD"
+  host: "postgresql-cluster-rw.orch-database"
+  database: "orch-iam-iam-tenancy"
+  username: "orch-iam-iam-tenancy_user"
+
+# Registered controllers list. Conditionally include controllers based on which
+# profile components are deployed; this prevents projects from getting stuck
+# waiting for controllers that are not actually running.
+tenancyManager:
+  oidcServerURL: "http://platform-keycloak.orch-platform.svc:8080/realms/master"
+  # Bootstrap default org/project on first startup
+  # Empty values disable the bootstrap; idempotent on subsequent restarts.
+  {{- if (.Values | get "tenancy-manager.bootstrap.enabled" false) }}
+  defaultOrgName:     {{ .Values | get "tenancy-manager.bootstrap.orgName"     "default" | quote }}
+  defaultProjectName: {{ .Values | get "tenancy-manager.bootstrap.projectName" "default" | quote }}
+  {{- else }}
+  defaultOrgName:     ""
+  defaultProjectName: ""
+  {{- end }}
+  # Tenant-admin bootstrap (Keycloak user `tenant-admin` + group membership
+  # for the default org/project). Driven by the same EMF_DEFAULT_TENANCY
+  # gate as the org/project bootstrap above. The chart will inject the
+  # required env vars and namespace-scoped Role/RoleBinding for reading the
+  # platform-keycloak admin secret and writing the tenant-admin-password
+  # secret.
+  bootstrapTenantAdmin:
+    enabled: {{ .Values | get "tenancy-manager.bootstrapTenantAdmin.enabled" false }}
+  controllers:
+    org:
+      - keycloak-tenant-controller
+    project:
+      {{- if (.Values | get "app-orch-tenant-controller.enabled" false) }}
+      - app-orch-tenant-controller
+      - app-deployment-manager
+      {{- end }}
+      - keycloak-tenant-controller
+      - infra-tenant-controller
+      {{- if (.Values | get "cluster-manager.enabled" false) }}
+      - cluster-manager
+      {{- end }}
+      {{- if and (.Values | get "alerting-monitor.enabled" false) (.Values | get "edgenode-observability.enabled" false) }}
+      - observability-tenant-controller
+      {{- end }}
+      {{- if (.Values | get "metadata-broker.enabled" false) }}
+      - metadata-broker
+      {{- end }}

@@ -35,6 +35,9 @@ copy-ca-cert-boots-to-gateway:
 copy-ca-cert-boots-to-infra:
   enabled: false
 auth-service:
+  # Disabled: resolve-project-id middleware has been removed from RPS/MPS IngressRoutes
+  # (multitenancy enforcement is disabled in the upstream services), so the
+  # ForwardAuth dependency on auth-service is no longer required.
   enabled: false
 namespace-labe:
   enabled: false

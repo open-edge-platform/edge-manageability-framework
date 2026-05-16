@@ -15,6 +15,11 @@
 
 # ─── Platform ────────────────────────────────────────────────────────────────
 auth-service:
+  # Kept enabled. Although metadata-broker and cluster-manager now self-resolve
+  # the active project via orch-library projectcontext (so resolve-project-id
+  # is no longer chained in front of them), auth-service is still required by:
+  #   - alerting-monitor (resolve-project-id middleware) when deployed
+  #   - observability node-side ingress (forward-auth-service Middleware)
   enabled: true
 cert-manager:
   enabled: true
@@ -76,6 +81,13 @@ infra-managers:
   enabled: true
 infra-external:
   enabled: true
+  amt:
+    mps:
+      enabled: true
+    rps:
+      enabled: true
+    dm-manager:
+      enabled: true
 copy-keycloak-admin-to-infra:
   enabled: true
 
@@ -91,15 +103,24 @@ web-ui-admin:
 audit:
   enabled: true
 
-# ─── Tenancy ─────────────────────────────────────────────────────────────────
-tenancy-datamodel:
-  enabled: true
+# ─── Tenancy (v2) ────────────────────────────────────────────────────────────
+# The new tenancy-manager (Postgres + Ent backed REST service from)
+# embeds the data model and API mapping; the legacy tenancy-datamodel,
+# tenancy-api-mapping charts have been removed.
 tenancy-manager:
   enabled: true
-tenancy-api-mapping:
-  enabled: true
-nexus-api-gw:
-  enabled: true
+  # When EMF_DEFAULT_TENANCY=true the tenancy-manager Pod creates a default org
+  # and project on first startup.
+  bootstrap:
+    enabled:     {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
+    orgName:     "default"
+    projectName: "default"
+  # Same gate also enables the tenant-admin Keycloak user + group bootstrap
+  # (ports the remaining functionality of the legacy tenancy-init Job:
+  # creates `tenant-admin` user, stores its password in a Secret, and adds
+  # it to the org admin / project edge groups).
+  bootstrapTenantAdmin:
+    enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
 keycloak-tenant-controller:
   enabled: true
 
@@ -119,10 +140,6 @@ infra-onboarding:
   skipOSProvisioning: {{ env "EMF_SKIP_OS_PROVISIONING" | default "false" }}
   disableCoProfile: true
   disableO11yProfile: true
-
-# ─── Tenancy mode ────────────────────────────────────────────────────────────
-tenancy-init:
-  enabled: {{ env "EMF_DEFAULT_TENANCY" | default "false" }}
 
 # ─── CORS ────────────────────────────────────────────────────────────────────
 cors:
