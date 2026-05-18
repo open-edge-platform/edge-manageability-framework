@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025 Intel Corporation
+# SPDX-FileCopyrightText: 2026 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,7 +17,6 @@ imagePullSecrets:
 resources: null
 
 # Traefik IngressRoute configuration
-# Priority must be > 30 to override nexus-api-gw's generic /v route (priority 30)
 traefikRoute:
   enabled: true
   matchHost: "Host(`api.{{ .Values.clusterDomain }}`)"
@@ -149,13 +148,13 @@ componentStatus:
         alerts-ui:
           installed: {{ or (index .Values "orchestrator-observability" "enabled" | default false) (index .Values "alerting-monitor" "enabled" | default false) }}
 
-      # Multitenancy - Tenancy services (tenancy-manager, tenancy-api-mapping, tenancy-datamodel)
+      # Multitenancy - Tenancy services (tenancy-manager)
       # are always deployed as part of platform, so multitenancy is always enabled
       # The default-tenant-only sub-feature indicates single-tenant mode (when defaultTenancy profile is loaded)
       multitenancy:
         installed: true
         default-tenant-only:
-          installed: {{ index .Values "tenancy-init" "enabled" | default false }}
+          installed: {{ index .Values "tenancy-manager" "bootstrap" "enabled" | default false }}
 
       # Kyverno - Policy engine for Kubernetes admission control and governance
       # Detection - kyverno.enabled in environment values

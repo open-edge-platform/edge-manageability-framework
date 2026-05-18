@@ -11,9 +11,6 @@ require_ro_rootfs:
 # Define namespace & pod (including wildcard) exceptions for restricted cluster policy.
 # These are used for 1st party pods. Exceptions for 3rd party namespaces are defined in cluster policy.
 restrictedPolicyOrch:
-  - namespace: "orch-iam"
-    names:
-      - "iam-umbrella-nexus-api-gw-*"
   - namespace: "orch-platform"
     names:
       - "orchestrator-observability-opentelemetry-collector*"
