@@ -1255,6 +1255,7 @@ func firewallDataLookup(dest string) (string, string, bool) {
 		"logs-node.":              {southboundSource, "Observability", false},
 		"metadata.":               {northboundSource, "Web UI", false},
 		"metrics-node.":           {southboundSource, "Observability", false},
+		"metrics-node-cli.":       {southboundSource, "Observability", false},
 		"observability-admin.":    {northboundSource, "Observability", false},
 		"observability-ui.":       {northboundSource, "Observability", false},
 		"onboarding-node.":        {southboundSource, "Infrastructure Management", false},
@@ -1273,7 +1274,7 @@ func firewallDataLookup(dest string) (string, string, bool) {
 		"web-ui.":                 {northboundSource, "Web UI", false},
 		"api.":                    {northboundSource, "Multi-Tenancy APIs", false},
 		"ws-app-service-proxy.":   {northboundSource, "Application Orchestration", false},
-		"tinkerbell-haproxy.":       {southboundSource, "BIOS Onboarding", false},
+		"tinkerbell-haproxy.":     {southboundSource, "BIOS Onboarding", false},
 		"argo.":                   {"Orchestrator Admin", "ArgoCD UI", false},
 	}
 

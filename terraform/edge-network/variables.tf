@@ -64,6 +64,7 @@ variable "dns_hosts" {
     { hostname = "logs-node.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "metadata.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "metrics-node.cluster.onprem", ip = "192.168.99.30" },
+    { hostname = "metrics-node-cli.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "observability-admin.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "observability-ui.cluster.onprem", ip = "192.168.99.30" },
     { hostname = "onboarding-node.cluster.onprem", ip = "192.168.99.30" },

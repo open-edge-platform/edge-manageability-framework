@@ -109,6 +109,7 @@ address=/log-query.$CLUSTER_FQDN/$cluster_lb
 address=/logs-node.$CLUSTER_FQDN/$cluster_lb
 address=/metadata.$CLUSTER_FQDN/$cluster_lb
 address=/metrics-node.$CLUSTER_FQDN/$cluster_lb
+address=/metrics-node-cli.$CLUSTER_FQDN/$cluster_lb
 address=/observability-admin.$CLUSTER_FQDN/$cluster_lb
 address=/observability-ui.$CLUSTER_FQDN/$cluster_lb
 address=/onboarding-node.$CLUSTER_FQDN/$cluster_lb
