@@ -22,6 +22,8 @@ updates:
       prefix: "Go modules"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   # Terraform
   - package-ecosystem: "terraform"
@@ -37,6 +39,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/terraform/orchestrator"
@@ -51,6 +55,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/terraform/edge-storage-pool"
@@ -65,6 +71,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/orchestrator/cluster"
@@ -79,6 +87,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/orchestrator/orch-load-balancer"
@@ -93,6 +103,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/orchestrator/orch-route53"
@@ -107,6 +119,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/orchestrator/pull-through-cache-proxy"
@@ -121,6 +135,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/module/lb-target-group-attachment"
@@ -135,6 +151,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/module/application-load-balancer"
@@ -149,6 +167,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/module/load-balancer"
@@ -163,6 +183,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "terraform"
     directory: "/pod-configs/buckets"
@@ -177,6 +199,8 @@ updates:
       prefix: "terraform"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   # Helm
   - package-ecosystem: "helm"
@@ -193,6 +217,8 @@ updates:
       prefix: "Helm"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "helm"
     directory: "/argocd-internal/root-app"
@@ -208,6 +234,8 @@ updates:
       prefix: "Helm"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "helm"
     directory: "/argocd/applications"
@@ -223,6 +251,8 @@ updates:
       prefix: "Helm"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "helm"
     directory: "/argocd/root-app"
@@ -238,6 +268,8 @@ updates:
       prefix: "Helm"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   # Docker
   - package-ecosystem: "docker"
@@ -254,6 +286,8 @@ updates:
       prefix: "Dockerfile"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -265,3 +299,5 @@ updates:
       prefix: "Github Actions"
     reviewers:
       - "dmytroye"
+    cooldown:
+      default-days: 7

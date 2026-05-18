@@ -72,3 +72,7 @@ credentialsM2M:
     adminSecretName: "platform-keycloak"
     adminSecretNamespace: "orch-platform"
     clientId: "co-manager-m2m-client"
+
+ingressRoute:
+  enabled: true
+  apiHostname: api.{{ .Values.argo.clusterDomain }}

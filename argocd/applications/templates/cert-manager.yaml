@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://charts.jetstack.io
       chart: cert-manager
-      targetRevision: 1.19.3
+      targetRevision: 1.20.2
       helm:
         releaseName: {{$appName}}
         valuesObject:

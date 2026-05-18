@@ -266,7 +266,7 @@ func gatewayTLSSecretValid() bool {
 	return false
 }
 
-// saveGatewayTLSSecret saves the orch-gateway tls-autocert secret to persistence (aws secrets manager)
+// saveGatewayTLSSecret saves the orch-gateway tls-autocert secret to persistence
 // Used to restore the secret later in case of an auto cert deployment
 func saveGatewayTLSSecret(loc string) error {
 	kubeCmd := "kubectl -n orch-gateway get secret tls-autocert -o yaml"
@@ -276,13 +276,6 @@ func saveGatewayTLSSecret(loc string) error {
 	}
 
 	secret = base64.StdEncoding.EncodeToString([]byte(secret))
-
-	if loc == "aws" {
-		// Write yaml secret to AWS Secret Manager
-		if err := secrets.NewAWSSM("tls-cert."+serviceDomain, "").SaveSecret(secret); err != nil {
-			return err
-		}
-	}
 
 	if loc == "file" {
 		// Write  yaml secret string to disk
@@ -323,15 +316,6 @@ func restoreGatewayTLSSecret(loc string) error {
 		}
 		// Read yaml secret string from disk
 		tlsSecret, err = secrets.NewFileSaver().GetSecret(file, "")
-		if err != nil {
-			return err
-		}
-	}
-
-	if loc == "aws" {
-		var err error
-		// Read yaml secret string from AWS Secret Manager
-		tlsSecret, err = secrets.NewAWSSM("tls-cert."+serviceDomain, "").GetSecret("")
 		if err != nil {
 			return err
 		}

@@ -2,7 +2,7 @@ argocd 2.10.10
 awscli 2.17.52
 docker-compose-v1 2.40.3
 ginkgo 2.23.4
-golang 1.26.1
+golang 1.26.3
 golangci-lint 2.11.4
 grpcurl 1.8.9
 helm 3.11.1
@@ -12,13 +12,13 @@ jq 1.6
 kind 0.30.0
 kubectl 1.30.10
 mage 1.15.0
+markdownlint-cli2 0.17.2
+nodejs 24.13.0
 oras 1.2.0
+python 3.11.9
 shellcheck 0.9.0
 terraform 1.9.5
 terraform-docs 0.17.0
 tflint 0.51.2
 yamllint 1.37.1
 yq 4.34.2
-nodejs 24.13.0
-markdownlint-cli2 0.17.2
-python 3.11.9
