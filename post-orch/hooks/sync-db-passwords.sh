@@ -30,7 +30,7 @@ kubectl wait --for=condition=Ready pod "$PGCLUSTER_POD" -n "$PGCLUSTER_NS" --tim
 }
 echo "🔄 Syncing DB passwords to PostgreSQL (pod: $PGCLUSTER_POD)..."
 # Find all managed basic-auth secrets in orch-database namespace
-SECRETS=$(kubectl get secrets -n "$PGCLUSTER_NS" -l managed-by=edge-out-of-band-manageability \
+SECRETS=$(kubectl get secrets -n "$PGCLUSTER_NS" -l managed-by=edge-manageability-framework \
   -o jsonpath='{range .items[?(@.type=="kubernetes.io/basic-auth")]}{.metadata.name}{"\n"}{end}' 2>/dev/null)
 if [[ -z "$SECRETS" ]]; then
   echo "ℹ️  No managed basic-auth secrets found — skipping"

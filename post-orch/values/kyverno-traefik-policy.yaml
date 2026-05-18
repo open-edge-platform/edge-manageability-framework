@@ -17,7 +17,6 @@ jwtMiddlewareException:
       - "web-ui-infra"
       - "svc-fleet-https"
       - "onboardingmgr-api-grpc-stream"
-      - "iam-umbrella-nexus-api-gw-api-docs"
       - "cluster-connect-gateway-ws"
       - "cluster-connect-gateway-kubeapi"
       - "orch-platform-keycloak"
