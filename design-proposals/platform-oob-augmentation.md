@@ -40,6 +40,7 @@ is the cloud-hosted path that UEM vendors (Workspace ONE, Intune) integrate for
 AMT capabilities. Both share the same fundamental constraint.
 
 **Intel EMA:**
+
 - **Windows-only.** The EMA agent runs exclusively on Windows 10/11. The EMA
   server requires Windows Server 2019/2022. There is no Linux support — not for
   managed endpoints, not for the management server. Linux support has been
@@ -52,6 +53,7 @@ AMT capabilities. Both share the same fundamental constraint.
   desired-state reconciliation or automatic convergence.
 
 **Intel Endpoint Cloud Services (ECS):**
+
 - **Windows-only.** Intel's own documentation states: "Intel ECS does not
   currently support Linux operating systems." The endpoint agent/driver is
   available for Windows only. Partner integrations (Workspace ONE chip-to-cloud,
@@ -478,7 +480,7 @@ integration with event log collection, conditional KVM/boot-mode triggers.
 ### Prioritization
 
 | # | Opportunity | Category | Existing Coverage (Windows only) | Effort | Value |
-|---|---|---|---|---|---|
+| - | - | - | - | - | - |
 | 1 | ✅ Bulk power operations | Gap + Augmentation | EMA: native. ECS: via API. Fleet Services: via Intune. | Low | High |
 | 2 | Scheduled power operations | Augmentation | None have native scheduling; EMA relies on external tools. | Medium | High |
 | 3 | Event log monitoring | Gap + Augmentation | EMA: receives events, no fleet aggregation. ECS: API only. Fleet Services: no. | Medium | High |
@@ -492,6 +494,7 @@ integration with event log collection, conditional KVM/boot-mode triggers.
 | 11 | Automated remote diagnostics (requires #3) | Augmentation | EMA: manual workflows. ECS: API hooks. Fleet Services: workflow-level. | Medium | High |
 
 **Categories:**
+
 - **Gap** — DMT capability that EOM does not yet surface. EMA provides equivalent
   functionality for Windows endpoints, but no solution exists for Linux edge
   infrastructure. These are greenfield for EOM's target market.
@@ -506,8 +509,8 @@ integration with event log collection, conditional KVM/boot-mode triggers.
 Linux edge market today. The "Existing Coverage" column shows what EMA provides
 for Windows endpoints; none of it is available for Linux edge nodes. The
 highest-impact opportunities combine this greenfield positioning with
-architectural advantages unique to EOM: desired-state reconciliation (#1, #6,
-#8), platform-native scheduling (#2), observability-stack integration (#3, #4),
+architectural advantages unique to EOM: desired-state reconciliation (#1, #6, #8),
+platform-native scheduling (#2), observability-stack integration (#3, #4),
 and capabilities that don't exist on any platform (#10, #11).
 
 ### Rejected Ideas
