@@ -28,7 +28,7 @@ require (
 	github.com/open-edge-platform/orch-library/go v0.6.3
 	github.com/open-edge-platform/orch-utils/tenancy-datamodel v1.2.3-0.20251126155507-e0d9404fa1d7
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/rs/zerolog v1.35.0
+	github.com/rs/zerolog v1.35.1
 	github.com/tinkerbell/tink v0.12.2
 	golang.org/x/crypto v0.50.0
 	golang.org/x/oauth2 v0.36.0
