@@ -21,7 +21,7 @@ spec:
   sources:
     - repoURL: https://haproxytech.github.io/helm-charts
       chart: kubernetes-ingress
-      targetRevision: 1.41.0
+      targetRevision: 1.49.0
       helm:
         releaseName: {{$appName}}
         valuesObject:
