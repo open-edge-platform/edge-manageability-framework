@@ -99,6 +99,9 @@ loca-credentials:
 
 amt:
   mps:
+    refresher:
+     intervalSeconds: 3000
+     livenessMaxAgeSeconds: 3300
     postgresql:
       image:
         tag: 16.10-bookworm
