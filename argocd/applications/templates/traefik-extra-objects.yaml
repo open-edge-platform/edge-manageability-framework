@@ -19,12 +19,9 @@ metadata:
 spec:
   project: {{ required "A valid projectName entry required!" .Values.argo.project }}
   sources:
-    #- repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
-    #  chart: common/charts/{{$appName}}
-    #  targetRevision: 26.1.0
-    - repoURL: https://github.com/open-edge-platform/orch-utils.git
-      chart: {{$appName}}
-      targetRevision: metrics-cli-ingress
+    - repoURL: {{ required "A valid chartRepoURL entry required!" .Values.argo.chartRepoURL }}
+      chart: common/charts/{{$appName}}
+      targetRevision: 26.1.2
       helm:
         releaseName: {{$appName}}
         valuesObject:
