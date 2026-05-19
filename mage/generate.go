@@ -1332,6 +1332,7 @@ func loopHosts(sb *strings.Builder, hosts []string) error {
 		"rps-wss",
 		"release",
 		"metrics-node",
+		"metrics-node-cli",
 		"telemetry-node",
 		"logs-node",
 		"tinkerbell-server",
