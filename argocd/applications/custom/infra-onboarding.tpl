@@ -41,7 +41,7 @@ infra-config:
     orchRelease: release.{{ .Values.argo.clusterDomain }}
     orchPlatformObsLogs: logs-node.{{ .Values.argo.clusterDomain }}:443
     orchPlatformObsMetrics: metrics-node.{{ .Values.argo.clusterDomain }}:443
-    orchPlatformObsMetrics: metrics-node-cli.{{ .Values.argo.clusterDomain }}:443
+    orchPlatformObsMetricsCli: metrics-node-cli.{{ .Values.argo.clusterDomain }}:443
     orchKeycloak: keycloak.{{ .Values.argo.clusterDomain }}:443
     orchTelemetry: telemetry-node.{{ .Values.argo.clusterDomain }}:443
     orchAttestationStatus: attest-node.{{ .Values.argo.clusterDomain }}:443
