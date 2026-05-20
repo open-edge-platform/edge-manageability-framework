@@ -23,12 +23,7 @@ Use this skill when you want to:
 ---
 
 Run pre-installation by:
-1. **Check prerequisites**:
-   - Kubernetes cluster available (KIND/K3s/RKE2)
-   - kubectl configured and accessible
-   - helmfile and helm installed
-   - Required ports available
-2. **Review pre-orch.env** configuration (use /pre-env-setting)
+1. **Review pre-orch.env** configuration (use /pre-env-setting)
 3. **Validate configuration**:
    - CLUSTER_PROVIDER set correctly
    - IP addresses configured (MetalLB range, EMF_ORCH_IP)

@@ -30,12 +30,22 @@ Manage post-orch.env by:
    cat post-orch/post-orch.env
    ```
 2. **Key settings to review**:
-   - **DEPLOYMENT_PROFILE**: `onprem-eim`, `onprem-vpro`, or `aws`
+   - **DEPLOYMENT_PROFILE**: `onprem-eim` or `onprem-vpro`
    - **EMF_ORCH_IP**: Orchestrator service IP
    - **EMF_TRAEFIK_IP**: Traefik ingress IP
    - **EMF_HAPROXY_IP**: HAProxy IP (if separate)
    - **VERSION_TAGS**: Component version overrides
    - **ENABLE_***: Feature flags for components
+   - **Proxy settings**:
+     - **EMF_HTTP_PROXY**: HTTP proxy URL for orchestrator services
+     - **EMF_HTTPS_PROXY**: HTTPS proxy URL for orchestrator services
+     - **EMF_NO_PROXY**: Comma-separated list of hosts/CIDRs to bypass proxy
+   - **Edge Node Proxy settings**:
+     - **EMF_EN_HTTP_PROXY**: HTTP proxy for edge nodes
+     - **EMF_EN_HTTPS_PROXY**: HTTPS proxy for edge nodes
+     - **EMF_EN_FTP_PROXY**: FTP proxy for edge nodes
+     - **EMF_EN_SOCKS_PROXY**: SOCKS proxy for edge nodes
+     - **EMF_EN_NO_PROXY**: No-proxy list for edge nodes
 3. **Update settings** as requested:
    - Edit specific lines
    - Validate values
@@ -43,7 +53,6 @@ Manage post-orch.env by:
 4. **Profile-specific considerations**:
    - **onprem-eim**: Standard deployment with EIM
    - **onprem-vpro**: Includes Intel vPro management
-   - **aws**: AWS-specific configurations
 5. **Special configurations**:
    - **Coder/single-IP**: All service IPs same as Coder host
    - **Multi-IP**: Separate IPs for Traefik, HAProxy, Orchestrator
@@ -73,6 +82,14 @@ DEPLOYMENT_PROFILE=onprem-eim
 EMF_ORCH_IP=10.0.0.100
 EMF_TRAEFIK_IP=10.0.0.100
 EMF_HAPROXY_IP=10.0.0.100
+
+# Behind corporate proxy
+EMF_HTTP_PROXY="http://proxy.corp.com:8080"
+EMF_HTTPS_PROXY="http://proxy.corp.com:8080"
+EMF_NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,.corp.com"
+EMF_EN_HTTP_PROXY="http://proxy.corp.com:8080"
+EMF_EN_HTTPS_PROXY="http://proxy.corp.com:8080"
+EMF_EN_NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,.corp.com"
 ```
 
 **Important environment files affected**:
