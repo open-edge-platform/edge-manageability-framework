@@ -57,8 +57,8 @@ LOG_FILE="$LOG_DIR/pre-orch-backup_$(date +'%Y%m%d_%H%M%S').log"
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-log_info()  { echo "[$(date +'%Y-%m-%d %H:%M:%S')] INFO:  $*"; }
-log_warn()  { echo "[$(date +'%Y-%m-%d %H:%M:%S')] WARN:  $*"; }
+log_info() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] INFO:  $*"; }
+log_warn() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] WARN:  $*"; }
 log_error() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $*"; }
 
 log_info "Starting pre-orch-backup"
@@ -131,7 +131,7 @@ phase2_postgres_secret() {
 
   if kubectl get secret -n "$POSTGRES_NAMESPACE" postgresql-cluster-superuser >/dev/null 2>&1; then
     kubectl get secret -n "$POSTGRES_NAMESPACE" postgresql-cluster-superuser \
-      -o yaml > "$secret_file"
+      -o yaml >"$secret_file"
     log_info "PostgreSQL superuser secret saved."
   else
     log_warn "postgresql-cluster-superuser secret not found, skipping."
@@ -212,12 +212,12 @@ phase4_postgres_passwords() {
     [Rps]="rps-local-postgresql:orch-infra:PGPASSWORD"
   )
 
-  : > "$pw_file"
+  : >"$pw_file"
   local value
   for label in "${!services[@]}"; do
-    IFS=':' read -r secret ns key <<< "${services[$label]}"
+    IFS=':' read -r secret ns key <<<"${services[$label]}"
     value=$(kubectl get secret "$secret" -n "$ns" -o jsonpath="{.data.$key}" 2>/dev/null || true)
-    echo "$label: $value" >> "$pw_file"
+    echo "$label: $value" >>"$pw_file"
   done
 
   log_info "PostgreSQL service passwords saved."
@@ -232,7 +232,7 @@ phase5_mps_rps_secrets() {
 
   for name in mps rps; do
     if kubectl get secret "$name" -n orch-infra >/dev/null 2>&1; then
-      kubectl get secret "$name" -n orch-infra -o yaml > "${UPGRADE_BACKUP_DIR}/${name}_secret.yaml"
+      kubectl get secret "$name" -n orch-infra -o yaml >"${UPGRADE_BACKUP_DIR}/${name}_secret.yaml"
       log_info "$name secret backed up."
     else
       log_info "$name secret not found, skipping."

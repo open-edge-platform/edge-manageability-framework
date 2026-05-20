@@ -356,7 +356,7 @@ Major groups are:
  3. TLS & Ingress  self-signed-cert, traefik, haproxy
  4. Database       postgresql-cluster, postgresql-secrets
  5. Platform       vault, secrets-config, keycloak
- 6. Tenancy        tenancy-datamodel, tenancy-manager
+ 6. Tenancy        tenancy-manager
  7. Edge Infra     infra-core, infra-managers
  8. Web UI         web-ui-admin, web-ui-infra
 ```

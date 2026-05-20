@@ -30,7 +30,7 @@ kubectl wait --for=condition=Ready pod "$PGCLUSTER_POD" -n "$PGCLUSTER_NS" --tim
 }
 echo "🔄 Syncing DB passwords to PostgreSQL (pod: $PGCLUSTER_POD)..."
 # Find all managed basic-auth secrets in orch-database namespace
-SECRETS=$(kubectl get secrets -n "$PGCLUSTER_NS" -l managed-by=edge-out-of-band-manageability \
+SECRETS=$(kubectl get secrets -n "$PGCLUSTER_NS" -l managed-by=edge-manageability-framework \
   -o jsonpath='{range .items[?(@.type=="kubernetes.io/basic-auth")]}{.metadata.name}{"\n"}{end}' 2>/dev/null)
 if [[ -z "$SECRETS" ]]; then
   echo "ℹ️  No managed basic-auth secrets found — skipping"
@@ -74,8 +74,8 @@ echo "🔄 Password sync complete: $SYNCED synced, $FAILED failed"
 # may not have re-run yet, leaving these secrets with stale passwords.
 for app in mps rps; do
   SRC_SECRET="${app}-local-postgresql"
-  if kubectl get secret "$SRC_SECRET" -n orch-infra &>/dev/null && \
-     kubectl get secret "$app" -n orch-infra &>/dev/null; then
+  if kubectl get secret "$SRC_SECRET" -n orch-infra &>/dev/null \
+    && kubectl get secret "$app" -n orch-infra &>/dev/null; then
     PW=$(kubectl get secret "$SRC_SECRET" -n orch-infra -o jsonpath='{.data.PGPASSWORD}' | base64 -d)
     USER=$(kubectl get secret "$SRC_SECRET" -n orch-infra -o jsonpath='{.data.PGUSER}' | base64 -d)
     DB=$(kubectl get secret "$SRC_SECRET" -n orch-infra -o jsonpath='{.data.PGDATABASE}' | base64 -d)
@@ -97,6 +97,6 @@ for app in mps rps; do
     fi
   fi
 done
-if (( FAILED > 0 )); then
+if ((FAILED > 0)); then
   echo "⚠️  Some password syncs failed — roles may not exist yet (first install). Will be synced on next run."
 fi

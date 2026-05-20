@@ -9,9 +9,9 @@
 ### Functions
 
 create_harbor_secret() {
-    kubectl -n "$1" delete secret harbor-admin-credential --ignore-not-found
+  kubectl -n "$1" delete secret harbor-admin-credential --ignore-not-found
 
-    kubectl apply -f - <<EOF
+  kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -23,9 +23,9 @@ EOF
 }
 
 create_harbor_password() {
-    kubectl -n "$1" delete secret harbor-admin-password --ignore-not-found
+  kubectl -n "$1" delete secret harbor-admin-password --ignore-not-found
 
-    kubectl apply -f - <<EOF
+  kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -37,9 +37,9 @@ EOF
 }
 
 create_keycloak_password() {
-    kubectl -n "$1" delete secret platform-keycloak --ignore-not-found
+  kubectl -n "$1" delete secret platform-keycloak --ignore-not-found
 
-    kubectl apply -f - <<EOF
+  kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -53,9 +53,9 @@ EOF
 }
 
 create_postgres_password() {
-    kubectl -n "$1" delete secret "$1-postgresql" --ignore-not-found
+  kubectl -n "$1" delete secret "$1-postgresql" --ignore-not-found
 
-    kubectl apply -f - <<EOF
+  kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
@@ -79,145 +79,143 @@ EOF
 # The password is created by generating random characters for each category,
 # filling the rest with additional random characters, and shuffling the result.
 generate_password() {
-    # Generate random characters for each category
-    # shellcheck disable=SC2018
-    lowercase=$(tr -dc 'a-z' < /dev/urandom | head -c 1)
-    # shellcheck disable=SC2019
-    uppercase=$(tr -dc 'A-Z' < /dev/urandom | head -c 1)
-    digit=$(tr -dc '0-9' < /dev/urandom | head -c 1)
-    special=$(tr -dc '!@#$%^&*()_+{}|:<>?' < /dev/urandom | head -c 1)
+  # Generate random characters for each category
+  # shellcheck disable=SC2018
+  lowercase=$(tr -dc 'a-z' </dev/urandom | head -c 1)
+  # shellcheck disable=SC2019
+  uppercase=$(tr -dc 'A-Z' </dev/urandom | head -c 1)
+  digit=$(tr -dc '0-9' </dev/urandom | head -c 1)
+  special=$(tr -dc '!@#$%^&*()_+{}|:<>?' </dev/urandom | head -c 1)
 
-    # Generate additional random characters to fill the rest of the password
-    remaining=$(tr -dc 'a-zA-Z0-9!@#$%^&*()_+{}|:<>?' < /dev/urandom | head -c 21)
+  # Generate additional random characters to fill the rest of the password
+  remaining=$(tr -dc 'a-zA-Z0-9!@#$%^&*()_+{}|:<>?' </dev/urandom | head -c 21)
 
-    # Combine all parts and shuffle them to create the final password
-    password=$(echo "$lowercase$uppercase$digit$special$remaining" | fold -w1 | shuf | tr -d '\n')
+  # Combine all parts and shuffle them to create the final password
+  password=$(echo "$lowercase$uppercase$digit$special$remaining" | fold -w1 | shuf | tr -d '\n')
 
-    echo "$password"
+  echo "$password"
 }
 
 # Checks if oras tool is installed
 check_oras() {
-    if ! command -v oras &>/dev/null; then
-        echo "Oras is not installed, install oras, exiting..."
-        exit 1
-    fi
+  if ! command -v oras &>/dev/null; then
+    echo "Oras is not installed, install oras, exiting..."
+    exit 1
+  fi
 }
 
 # Install yq tool
 install_yq() {
-    if ! command -v yq &>/dev/null; then
-        curl -jL https://github.com/mikefarah/yq/releases/download/v4.42.1/yq_linux_amd64 -o /tmp/yq
-        sudo mv /tmp/yq /usr/bin/yq
-        sudo chmod 755 /usr/bin/yq
-    else
-        echo yq tool found in the path
-    fi
+  if ! command -v yq &>/dev/null; then
+    curl -jL https://github.com/mikefarah/yq/releases/download/v4.42.1/yq_linux_amd64 -o /tmp/yq
+    sudo mv /tmp/yq /usr/bin/yq
+    sudo chmod 755 /usr/bin/yq
+  else
+    echo yq tool found in the path
+  fi
 }
 
 # Downloads artifacts from OCI registry in Release Service
 # download_artifacts <cwd> <directory> <release service URL> <path in release service> <array[@] of package names>
 download_artifacts() {
-    cwd=$1
-    dir_name=$2
-    rs_url=$3
-    rs_path=$4
-    shift 4
-    download_list=("$@")
+  cwd=$1
+  dir_name=$2
+  rs_url=$3
+  rs_path=$4
+  shift 4
+  download_list=("$@")
 
-    mkdir -p "$cwd/$dir_name"
-    cd "$cwd/$dir_name" || exit 1
-    for artifact in "${download_list[@]}"; do
-        sudo oras pull -v "$rs_url/$rs_path/$artifact"
-    done
-    cd "$cwd" || exit 1
+  mkdir -p "$cwd/$dir_name"
+  cd "$cwd/$dir_name" || exit 1
+  for artifact in "${download_list[@]}"; do
+    sudo oras pull -v "$rs_url/$rs_path/$artifact"
+  done
+  cd "$cwd" || exit 1
 }
-
 
 # Waits for pods in namespace to be in Ready state
 # wait_for_pods_running <namespace>
 wait_for_pods_running() {
-    kubectl wait pod --selector='!job-name' --all --for=condition=Ready --namespace="$1" --timeout=600s
+  kubectl wait pod --selector='!job-name' --all --for=condition=Ready --namespace="$1" --timeout=600s
 }
 
 # Waits for deployment to be in Ready state
 # wait_for_deploy <deployment_name> <namespace>
 wait_for_deploy() {
-    kubectl rollout status deploy/"$1" -n "$2" --timeout=30m
+  kubectl rollout status deploy/"$1" -n "$2" --timeout=30m
 }
 
 # Waits for pods in namespace to be created
 # wait_for_namespace_creation <namespace>
 wait_for_namespace_creation() {
-    while [ "$(kubectl get ns "$1" -o jsonpath='{.status.phase}')" != "Active" ]
-    do
-        sleep 5
-    done
+  while [ "$(kubectl get ns "$1" -o jsonpath='{.status.phase}')" != "Active" ]; do
+    sleep 5
+  done
 }
 
 # Updates or appends a variable in the config file
 # update_config_variable <config_file> <variable_name> <variable_value>
 update_config_variable() {
-    local config_file="$1"
-    local var_name="$2"
-    local var_value="$3"
+  local config_file="$1"
+  local var_name="$2"
+  local var_value="$3"
 
-    if [[ -n "${var_value:-}" ]]; then
-        if grep -q "^export ${var_name}=" "$config_file"; then
-            # Update existing line
-            sed -i "s|^export ${var_name}=.*|export ${var_name}='${var_value}'|" "$config_file"
-        else
-            # Append if not exists
-            echo "export ${var_name}='${var_value}'" >> "$config_file"
-        fi
+  if [[ -n "${var_value:-}" ]]; then
+    if grep -q "^export ${var_name}=" "$config_file"; then
+      # Update existing line
+      sed -i "s|^export ${var_name}=.*|export ${var_name}='${var_value}'|" "$config_file"
+    else
+      # Append if not exists
+      echo "export ${var_name}='${var_value}'" >>"$config_file"
     fi
+  fi
 }
 
 check_and_download_dkam_certs() {
-    local cluster_domain="${1:-cluster.onprem}"
-    local timeout_minutes=10
-    local interval=30
-    local max_attempts=$(( timeout_minutes * 60 / interval ))
-    echo "[INFO] Checking DKAM certificates readiness for ${cluster_domain} (timeout: ${timeout_minutes}m)..."
+  local cluster_domain="${1:-cluster.onprem}"
+  local timeout_minutes=10
+  local interval=30
+  local max_attempts=$((timeout_minutes * 60 / interval))
+  echo "[INFO] Checking DKAM certificates readiness for ${cluster_domain} (timeout: ${timeout_minutes}m)..."
 
-    rm -f /tmp/Full_server.crt /tmp/signed_ipxe.efi 2>/dev/null || true
+  rm -f /tmp/Full_server.crt /tmp/signed_ipxe.efi 2>/dev/null || true
 
-    local attempt=1
-    local success=false
+  local attempt=1
+  local success=false
 
-    while (( attempt <= max_attempts )); do
-        echo "[Attempt ${attempt}/${max_attempts}] Checking DKAM certificate availability..."
+  while ((attempt <= max_attempts)); do
+    echo "[Attempt ${attempt}/${max_attempts}] Checking DKAM certificate availability..."
 
-        if wget "https://tinkerbell-haproxy.${cluster_domain}/tink-stack/keys/Full_server.crt" \
-            --no-check-certificate --no-proxy -q -O /tmp/Full_server.crt 2>/dev/null; then
-            echo "[OK] Full_server.crt downloaded successfully"
+    if wget "https://tinkerbell-haproxy.${cluster_domain}/tink-stack/keys/Full_server.crt" \
+      --no-check-certificate --no-proxy -q -O /tmp/Full_server.crt 2>/dev/null; then
+      echo "[OK] Full_server.crt downloaded successfully"
 
-            if wget --ca-certificate=/tmp/Full_server.crt \
-                "https://tinkerbell-haproxy.${cluster_domain}/tink-stack/signed_ipxe.efi" \
-                -q -O /tmp/signed_ipxe.efi 2>/dev/null; then
-                echo "[OK] signed_ipxe.efi downloaded successfully"
-                success=true
-                break
-            else
-                echo "[WARN] Failed to download signed_ipxe.efi, retrying..."
-                rm -f /tmp/Full_server.crt /tmp/signed_ipxe.efi 2>/dev/null || true
-            fi
-        else
-            echo "[WARN] Full_server.crt not available yet, waiting..."
-        fi
-
-        if (( attempt < max_attempts )); then
-            echo "[INFO] Waiting ${interval} seconds before next attempt..."
-            sleep ${interval}
-        fi
-        ((attempt++))
-    done
-
-    if [[ "$success" == "true" ]]; then
-        echo "[SUCCESS] DKAM certificates are ready and downloaded"
-        return 0
+      if wget --ca-certificate=/tmp/Full_server.crt \
+        "https://tinkerbell-haproxy.${cluster_domain}/tink-stack/signed_ipxe.efi" \
+        -q -O /tmp/signed_ipxe.efi 2>/dev/null; then
+        echo "[OK] signed_ipxe.efi downloaded successfully"
+        success=true
+        break
+      else
+        echo "[WARN] Failed to download signed_ipxe.efi, retrying..."
+        rm -f /tmp/Full_server.crt /tmp/signed_ipxe.efi 2>/dev/null || true
+      fi
     else
-        echo "[FAIL] DKAM certificates not available after ${timeout_minutes} minutes"
-        return 1
+      echo "[WARN] Full_server.crt not available yet, waiting..."
     fi
+
+    if ((attempt < max_attempts)); then
+      echo "[INFO] Waiting ${interval} seconds before next attempt..."
+      sleep ${interval}
+    fi
+    ((attempt++))
+  done
+
+  if [[ "$success" == "true" ]]; then
+    echo "[SUCCESS] DKAM certificates are ready and downloaded"
+    return 0
+  else
+    echo "[FAIL] DKAM certificates not available after ${timeout_minutes} minutes"
+    return 1
+  fi
 }

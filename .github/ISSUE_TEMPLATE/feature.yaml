@@ -1,5 +1,5 @@
 name: Feature Request
-description: File a feature request. 
+description: File a feature request.
 title: '[FEATURE]: '
 labels: ['feature']
 type: "Feature"
@@ -7,7 +7,7 @@ body:
   - type: textarea
     attributes:
       label: Feature Description
-      description: A clear and concise description of the problem or missing capability. 
+      description: A clear and concise description of the problem or missing capability.
     validations:
       required: true
   - type: input
@@ -22,7 +22,6 @@ body:
     attributes:
       label: Solution Description
       description: If you have a solution in mind, please describe it.
-
   - type: textarea
     attributes:
       label: Alternative Description

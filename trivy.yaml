@@ -1,15 +1,12 @@
 # SPDX-FileCopyrightText: 2025 Intel Corporation
 #
 # SPDX-License-Identifier: Apache-2.0
-
 scan:
   skip-dirs:
     - kind/5g/multus
   skip-files:
     - installer/Dockerfile
-
 ignorefile: ./.trivyignore.yaml
-
 # Suppress false positives and expected security findings
 rego:
   skip-policies:
@@ -17,7 +14,6 @@ rego:
     # The operator legitimately needs to create/manage services, ingresses, and network policies
     # These are upstream operator permissions required for functionality
     - AVD-KSV-0056
-    
     # KSV108: False positive - we use ExternalName services (not externalIPs)
     # ExternalName is a standard Kubernetes DNS alias pattern and is NOT vulnerable to CVE-2020-8554
     # CVE-2020-8554 applies to spec.externalIPs field, not spec.externalName

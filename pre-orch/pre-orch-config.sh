@@ -18,8 +18,14 @@ source "$SCRIPT_DIR/functions.sh"
 ################################
 require_cmd() { command -v "$1" >/dev/null 2>&1; }
 ensure_prereqs() {
-  require_cmd kubectl || { echo "❌ kubectl not found"; exit 1; }
-  require_cmd helm || { echo "❌ helm not found"; exit 1; }
+  require_cmd kubectl || {
+    echo "❌ kubectl not found"
+    exit 1
+  }
+  require_cmd helm || {
+    echo "❌ helm not found"
+    exit 1
+  }
 }
 ################################
 # NAMESPACES

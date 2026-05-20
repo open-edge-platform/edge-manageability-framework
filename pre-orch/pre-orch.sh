@@ -25,14 +25,14 @@ step_start() {
 }
 
 step_done() {
-  local dur=$(( SECONDS - _STEP_START ))
+  local dur=$((SECONDS - _STEP_START))
   STEP_NAMES+=("$_STEP_NAME")
   STEP_DURATIONS+=("$dur")
-  echo "⏱️  [$_STEP_NAME] completed in $(( dur / 60 ))m $(( dur % 60 ))s"
+  echo "⏱️  [$_STEP_NAME] completed in $((dur / 60))m $((dur % 60))s"
 }
 
 print_timing_summary() {
-  local total=$(( SECONDS - SCRIPT_START_TIME ))
+  local total=$((SECONDS - SCRIPT_START_TIME))
   local end_ts
   end_ts=$(date '+%Y-%m-%d %H:%M:%S')
   echo ""
@@ -41,12 +41,12 @@ print_timing_summary() {
   echo "═══════════════════════════════════════════════════════════════"
   for i in "${!STEP_NAMES[@]}"; do
     local d=${STEP_DURATIONS[$i]}
-    printf "  %-35s %dm %ds\n" "${STEP_NAMES[$i]}" $(( d / 60 )) $(( d % 60 ))
+    printf "  %-35s %dm %ds\n" "${STEP_NAMES[$i]}" $((d / 60)) $((d % 60))
   done
   echo "  ─────────────────────────────────────────────────────────────"
   echo "  Start: $SCRIPT_START_TS"
   echo "  End:   $end_ts"
-  printf "  Total: %dm %ds\n" $(( total / 60 )) $(( total % 60 ))
+  printf "  Total: %dm %ds\n" $((total / 60)) $((total % 60))
   echo "═══════════════════════════════════════════════════════════════"
 }
 
@@ -55,7 +55,9 @@ trap print_timing_summary EXIT
 # Source config file if present
 if [[ -f "${SCRIPT_DIR}/pre-orch.env" ]]; then
   # shellcheck disable=SC1091
-  set -a; source "${SCRIPT_DIR}/pre-orch.env"; set +a
+  set -a
+  source "${SCRIPT_DIR}/pre-orch.env"
+  set +a
 fi
 
 # ─── Logging: tee all output to timestamped log file ────────────────────────
@@ -186,8 +188,8 @@ install_kubectl() {
   os="$(uname -s | tr '[:upper:]' '[:lower:]')"
   arch="$(uname -m)"
   case "${arch}" in
-    x86_64|amd64) arch="amd64" ;;
-    aarch64|arm64) arch="arm64" ;;
+    x86_64 | amd64) arch="amd64" ;;
+    aarch64 | arm64) arch="arm64" ;;
   esac
 
   curl -fsSLo /tmp/kubectl "https://dl.k8s.io/release/${version}/bin/${os}/${arch}/kubectl"
@@ -228,8 +230,8 @@ install_helmfile() {
   os="$(uname -s | tr '[:upper:]' '[:lower:]')"
   arch="$(uname -m)"
   case "${arch}" in
-    x86_64|amd64) arch="amd64" ;;
-    aarch64|arm64) arch="arm64" ;;
+    x86_64 | amd64) arch="amd64" ;;
+    aarch64 | arm64) arch="arm64" ;;
   esac
 
   local version="$desired_version"
@@ -321,7 +323,7 @@ wait_for_k8s_ready() {
   echo "👉 Waiting for Kubernetes API to be reachable..."
   local deadline=$((SECONDS + WAIT_TIMEOUT_SECONDS))
   until kubectl "${kubectl_ctx_args[@]}" get --raw='/readyz' >/dev/null 2>&1; do
-    if (( SECONDS >= deadline )); then
+    if ((SECONDS >= deadline)); then
       echo "❌ Timed out waiting for API server to be ready after ${WAIT_TIMEOUT_SECONDS}s"
       kubectl "${kubectl_ctx_args[@]}" cluster-info || true
       exit 1
@@ -333,7 +335,7 @@ wait_for_k8s_ready() {
   echo "👉 Waiting for at least one node to register (timeout: ${WAIT_TIMEOUT_SECONDS}s)..."
   deadline=$((SECONDS + WAIT_TIMEOUT_SECONDS))
   until [[ $(kubectl "${kubectl_ctx_args[@]}" get nodes --no-headers 2>/dev/null | wc -l) -gt 0 ]]; do
-    if (( SECONDS >= deadline )); then
+    if ((SECONDS >= deadline)); then
       echo "❌ Timed out waiting for node to register after ${WAIT_TIMEOUT_SECONDS}s"
       exit 1
     fi
@@ -369,7 +371,7 @@ install_pre_orch_components() {
     if [[ "${not_ready}" -eq 0 ]]; then
       break
     fi
-    if (( SECONDS >= deadline )); then
+    if ((SECONDS >= deadline)); then
       echo "❌ Timed out waiting for system pods to be ready (${not_ready} pod(s) not ready)"
       kubectl get pods -A || true
       exit 1
@@ -435,8 +437,8 @@ kind_arch() {
   local arch
   arch="$(uname -m)"
   case "${arch}" in
-    x86_64|amd64) echo "amd64" ;;
-    aarch64|arm64) echo "arm64" ;;
+    x86_64 | amd64) echo "amd64" ;;
+    aarch64 | arm64) echo "arm64" ;;
     *)
       echo "❌ Unsupported architecture for kind: ${arch}"
       exit 1
@@ -474,7 +476,7 @@ install_kind_bin() {
 create_kind_config() {
   local cfg_file="$1"
 
-  cat <<EOF > "${cfg_file}"
+  cat <<EOF >"${cfg_file}"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
@@ -875,7 +877,7 @@ fi
 # Manual parsing for long options
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;
@@ -952,21 +954,30 @@ else
       case "${ACTION}" in
         install) kind_install ;;
         uninstall) kind_uninstall ;;
-        *) usage; exit 1 ;;
+        *)
+          usage
+          exit 1
+          ;;
       esac
       ;;
     k3s)
       case "${ACTION}" in
         install) k3s_install ;;
         uninstall) k3s_uninstall ;;
-        *) usage; exit 1 ;;
+        *)
+          usage
+          exit 1
+          ;;
       esac
       ;;
     rke2)
       case "${ACTION}" in
         install) rke2_install ;;
         uninstall) rke2_uninstall ;;
-        *) usage; exit 1 ;;
+        *)
+          usage
+          exit 1
+          ;;
       esac
       ;;
     *)

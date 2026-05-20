@@ -68,14 +68,14 @@ fi
 # Uncomment unix_sock_group / unix_sock_rw_perms if present, append if not
 sudo sed -i 's/^#\s*unix_sock_group\s*=\s*"libvirt"/unix_sock_group = "libvirt"/' /etc/libvirt/libvirtd.conf
 sudo sed -i 's/^#\s*unix_sock_rw_perms\s*=\s*"0770"/unix_sock_rw_perms = "0770"/' /etc/libvirt/libvirtd.conf
-grep -q '^unix_sock_group = "libvirt"'  /etc/libvirt/libvirtd.conf || \
-  echo 'unix_sock_group = "libvirt"'  | sudo tee -a /etc/libvirt/libvirtd.conf
-grep -q '^unix_sock_rw_perms = "0770"' /etc/libvirt/libvirtd.conf || \
-  echo 'unix_sock_rw_perms = "0770"' | sudo tee -a /etc/libvirt/libvirtd.conf
+grep -q '^unix_sock_group = "libvirt"' /etc/libvirt/libvirtd.conf \
+  || echo 'unix_sock_group = "libvirt"' | sudo tee -a /etc/libvirt/libvirtd.conf
+grep -q '^unix_sock_rw_perms = "0770"' /etc/libvirt/libvirtd.conf \
+  || echo 'unix_sock_rw_perms = "0770"' | sudo tee -a /etc/libvirt/libvirtd.conf
 
 # ── Add current user to libvirt/kvm groups ────────────────────────────────────
 sudo usermod -aG libvirt "$USER"
-sudo usermod -aG kvm     "$USER"
+sudo usermod -aG kvm "$USER"
 
 # ── Enable + start the libvirt daemon ────────────────────────────────────────
 sudo systemctl daemon-reload
@@ -98,7 +98,7 @@ sudo systemctl restart libvirtd.service
 sleep 2
 
 # Loosen socket perms for CI convenience (best-effort)
-sudo chmod 666 /var/run/libvirt/libvirt-sock    || true
+sudo chmod 666 /var/run/libvirt/libvirt-sock || true
 sudo chmod 666 /var/run/libvirt/libvirt-sock-ro || true
 
 # ── Verification (these MUST succeed; pipefail will catch failures) ──────────
