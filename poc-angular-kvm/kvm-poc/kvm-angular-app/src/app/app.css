@@ -1,0 +1,233 @@
+.kvm-app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+}
+
+.header h1 {
+  margin: 0 0 10px 0;
+  font-size: 2em;
+}
+
+.subtitle {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.status {
+  margin-top: 15px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  font-weight: bold;
+}
+
+.status-0 { background: #e0e0e0; color: #666; }
+.status-1 { background: #fff3cd; color: #856404; }
+.status-2 { background: #d1ecf1; color: #0c5460; }
+.status-3 { background: #d4edda; color: #155724; }
+
+.controls {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.control-group {
+  margin-bottom: 15px;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.control-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.control-group input:disabled {
+  background: #e9ecef;
+  cursor: not-allowed;
+}
+
+.button-group {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.consent-panel {
+  margin-top: 20px;
+  padding: 16px;
+  background: #eef4ff;
+  border: 1px solid #c8d8ff;
+  border-radius: 8px;
+}
+
+.consent-panel h3 {
+  margin: 0 0 8px 0;
+  color: #213a7a;
+}
+
+.consent-copy {
+  margin: 0 0 12px 0;
+  color: #445;
+}
+
+.consent-entry label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+.consent-entry input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.consent-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.consent-approved-banner {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #d4edda;
+  color: #155724;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.consent-message {
+  margin-top: 12px;
+  color: #213a7a;
+}
+
+.btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #c82333;
+}
+
+.kvm-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.logs {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.logs h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.log-entries {
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.log-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid #e0e0e0;
+  color: #555;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+/* ── orch-cli autoconnect mode ──────────────────────────────────────────── */
+.autoconnect-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  background: #1a1a2e;
+  border-radius: 6px;
+}
+
+.autoconnect-bar .status {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.autoconnect-bar .btn {
+  margin: 0;
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+/* In autoconnect mode remove extra padding around canvas */
+.kvm-app:has(.autoconnect-bar) .kvm-container {
+  margin: 0;
+  padding: 4px;
+  box-shadow: none;
+}
