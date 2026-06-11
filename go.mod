@@ -4,11 +4,11 @@
 
 module github.com/open-edge-platform/edge-manageability-framework
 
-go 1.26.3
+go 1.26.4
 
 require (
 	github.com/Nerzal/gocloak/v13 v13.9.0
-	github.com/bitfield/script v0.24.1
+	github.com/bitfield/script v0.24.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/magefile/mage v1.17.2
