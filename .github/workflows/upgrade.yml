@@ -34,7 +34,7 @@ jobs:
 
       - name: Setup asdf and install dependencies
         id: install-deps
-        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@587c67a41629ce30ddbc6e5f06c0990b13c4118c
+        uses: open-edge-platform/orch-ci/.github/actions/setup-asdf@db3a4eb9966dd1cba2061c16a94d769b7fccf243
 
       - name: Deploy Orchestrator ${{ matrix.version-tags }}
         env:
