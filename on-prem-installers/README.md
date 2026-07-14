@@ -142,6 +142,7 @@ Execute the following instructions on your development machine.
     ${TRAEFIK_IP} "logs-node.cluster.onprem"
     ${TRAEFIK_IP} "metadata.cluster.onprem"
     ${TRAEFIK_IP} "metrics-node.cluster.onprem"
+    ${TRAEFIK_IP} "metrics-node-cli.cluster.onprem"
     ${TRAEFIK_IP} "observability-admin.cluster.onprem"
     ${TRAEFIK_IP} "observability-ui.cluster.onprem"
     ${TRAEFIK_IP} "onboarding-node.cluster.onprem"
